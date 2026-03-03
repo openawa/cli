@@ -1,3 +1,4 @@
+import chipkey from '@jeanregisser/chipkey'
 import { bytesToHex, hexToBytes, normalizeHex } from '../lib/encoding.js'
 import { AppError } from '../lib/errors.js'
 import { runCommand } from '../lib/exec.js'
@@ -9,7 +10,7 @@ type ChipkeyResponse = {
 }
 
 function resolveChipkeyBinary(): string {
-  return process.env.CHIPKEY_BINARY ?? 'chipkey'
+  return process.env.CHIPKEY_BINARY ?? chipkey.resolveBinary()
 }
 
 function parseResponse(stdout: string): ChipkeyResponse {
