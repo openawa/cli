@@ -966,7 +966,11 @@ export class PortoService {
     }
   }
 
-  async send(options: SendOptions) {
+  async *send(options: SendOptions): AsyncGenerator<
+    { stage: 'prepare_calls' | 'sign_digest' | 'send_prepared' | 'await_settlement' },
+    { txHash: string | null; bundleId: string; status: string },
+    unknown
+  > {
     const chain = options.chain
 
     const session = await getWalletClient({
@@ -976,7 +980,7 @@ export class PortoService {
       mode: 'relay',
     })
 
-    let stage: 'prepare_calls' | 'sign_digest' | 'send_prepared' = 'prepare_calls'
+    let stage: 'prepare_calls' | 'sign_digest' | 'send_prepared' | 'await_settlement' = 'prepare_calls'
 
     try {
       const key = await this.signer.getPortoKey()
@@ -986,6 +990,7 @@ export class PortoService {
       let prepared: Awaited<ReturnType<typeof WalletActions.prepareCalls>>
       try {
         stage = 'prepare_calls'
+        yield { stage }
         prepared = await withTimeout(
           WalletActions.prepareCalls(session.client, {
             calls: calls as any,
@@ -1011,6 +1016,7 @@ export class PortoService {
       let signatureResult: Awaited<ReturnType<SignerService['sign']>>
       try {
         stage = 'sign_digest'
+        yield { stage }
         signatureResult = await this.signer.sign(prepared.digest, 'hex', 'none')
       } catch (error) {
         const metadata = errorMetadata(error)
@@ -1023,6 +1029,7 @@ export class PortoService {
       let response: Awaited<ReturnType<typeof WalletActions.sendPreparedCalls>>
       try {
         stage = 'send_prepared'
+        yield { stage }
         response = await withTimeout(
           WalletActions.sendPreparedCalls(session.client, {
             ...prepared,
@@ -1048,6 +1055,8 @@ export class PortoService {
         throw new AppError('SEND_FAILED', 'Porto did not return a call bundle id.')
       }
 
+      stage = 'await_settlement'
+      yield { stage }
       const settlement = await waitForBundleSettlement(session.client, bundleId)
 
       // Precall permissions are now on-chain — clear them from local config.

@@ -10,7 +10,7 @@ import { baseSepolia } from 'viem/chains'
 
 export type CliRunResult = {
   exitCode: number
-  payload: Record<string, unknown> | null
+  payload: Record<string, unknown> | unknown[] | null
   stderr: string
   stdout: string
 }
@@ -394,7 +394,7 @@ async function waitForProcessExit(
   })
 }
 
-function parseJsonPayload(output: string): Record<string, unknown> | null {
+function parseJsonPayload(output: string): Record<string, unknown> | unknown[] | null {
   if (!output) return null
   // incur writes pretty-printed JSON as the last block; find the last line
   // starting with { or [ and parse from there to end of output.
@@ -403,7 +403,7 @@ function parseJsonPayload(output: string): Record<string, unknown> | null {
     const trimmed = lines[i]!.trim()
     if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
       try {
-        return JSON.parse(lines.slice(i).join('\n')) as Record<string, unknown>
+        return JSON.parse(lines.slice(i).join('\n')) as Record<string, unknown> | unknown[]
       } catch {
         // continue searching upward
       }

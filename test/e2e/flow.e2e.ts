@@ -103,7 +103,7 @@ describe('e2e flow', () => {
 
       const statusCheck = await runCli(['status', '--json'], env.env)
       expect(statusCheck.exitCode).toBe(0)
-      const account = statusCheck.payload?.account as { address: `0x${string}` }
+      const account = (statusCheck.payload as Record<string, unknown>)?.account as { address: `0x${string}` }
       const accountAddress = account.address
       // After configure, precall is stored locally. The permission may already be
       // on-chain (createAccount submits a tx) or still precall-pending.
@@ -179,17 +179,34 @@ describe('e2e flow', () => {
         allowedResult.exitCode,
         `allowed sign failed:\nstdout: ${allowedResult.stdout}\nstderr: ${allowedResult.stderr}`,
       ).toBe(0)
-      expect(allowedResult.payload).toMatchInlineSnapshot({
-        bundleId: expect.any(String),
-        txHash: expect.any(String),
-      }, `
-        {
-          "bundleId": Any<String>,
-          "command": "sign",
-          "poweredBy": "Porto",
-          "status": "success",
-          "txHash": Any<String>,
-        }
+      expect(allowedResult.payload).toMatchInlineSnapshot([
+        {},
+        {},
+        {},
+        {},
+        { bundleId: expect.any(String), txHash: expect.any(String) },
+      ], `
+        [
+          {
+            "stage": "prepare_calls",
+          },
+          {
+            "stage": "sign_digest",
+          },
+          {
+            "stage": "send_prepared",
+          },
+          {
+            "stage": "await_settlement",
+          },
+          {
+            "bundleId": Any<String>,
+            "command": "sign",
+            "poweredBy": "Porto",
+            "status": "success",
+            "txHash": Any<String>,
+          },
+        ]
       `)
 
       // ── Reject a disallowed call ──────────────────────────────────────────
@@ -213,7 +230,7 @@ describe('e2e flow', () => {
 
       const jsonStatus = await runCli(['status', '--json'], env.env)
       expect(jsonStatus.exitCode).toBe(0)
-      const statusAccount = jsonStatus.payload?.account as { address: string }
+      const statusAccount = (jsonStatus.payload as Record<string, unknown>)?.account as { address: string }
       expect(statusAccount?.address?.toLowerCase()).toBe(accountAddress.toLowerCase())
       expect(jsonStatus.payload).toMatchInlineSnapshot({
         account: { address: expect.any(String) },
@@ -625,9 +642,9 @@ describe('e2e flow', () => {
   )
 })
 
-function parseCheckpoints(payload: Record<string, unknown> | null): Map<string, string> {
+function parseCheckpoints(payload: Record<string, unknown> | unknown[] | null): Map<string, string> {
   const map = new Map<string, string>()
-  if (!payload) return map
+  if (!payload || Array.isArray(payload)) return map
   const checkpoints = payload.checkpoints
   if (!Array.isArray(checkpoints)) return map
   for (const cp of checkpoints) {
