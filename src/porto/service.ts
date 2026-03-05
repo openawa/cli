@@ -64,6 +64,7 @@ type SendOptions = {
 type FundOptions = {
   address?: `0x${string}`
   chainId?: number
+  skipConnect?: boolean
 }
 
 type PermissionsOptions = {
@@ -782,24 +783,6 @@ export class PortoService {
         chain.id,
       ) ?? null
 
-      // Align with Porto CLI UX: notify dialog of success so the web page
-      // can render a completion state instead of staying idle/blank.
-      try {
-        const { messenger } = await import('porto/cli/Dialog')
-        const isCreate = Boolean(options.createAccount)
-        messenger.send('success', {
-          title: isCreate ? 'Account created' : 'Account connected',
-          content: isCreate
-            ? 'You have successfully created an account.'
-            : 'You have successfully signed in to your account.',
-        })
-
-        // Give the message channel a brief moment to flush before process exit.
-        await new Promise((resolve) => setTimeout(resolve, 300))
-      } catch {
-        // Non-fatal for onboard result; CLI output remains source of truth.
-      }
-
       const addressChanged =
         this.config.porto?.address &&
         this.config.porto.address.toLowerCase() !== account.address.toLowerCase()
@@ -860,21 +843,6 @@ export class PortoService {
         throw new AppError('GRANT_FAILED', 'Porto did not return a granted permission.')
       }
 
-      // Align with Porto CLI UX: notify dialog of success so the web page
-      // can render a completion state instead of staying idle/blank.
-      try {
-        const { messenger } = await import('porto/cli/Dialog')
-        messenger.send('success', {
-          title: 'Permissions granted',
-          content: 'The agent has been granted the requested permissions.',
-        })
-
-        // Give the message channel a brief moment to flush before process exit.
-        await new Promise((resolve) => setTimeout(resolve, 300))
-      } catch {
-        // Non-fatal for grant result; CLI output remains source of truth.
-      }
-
       const resolvedAddress = (options.address ?? this.config.porto?.address) as `0x${string}`
 
       const existingChainIds = this.config.porto?.chainIds ?? []
@@ -916,12 +884,12 @@ export class PortoService {
         throw new AppError('MISSING_ACCOUNT_ADDRESS', 'No account address configured. Run `openawa configure` first.')
       }
 
-      await WalletActions.connect(session.client, {
-        chainIds: [chain.id],
-        selectAccount: {
-          address,
-        },
-      })
+      if (!options.skipConnect) {
+        await WalletActions.connect(session.client, {
+          chainIds: [chain.id],
+          selectAccount: { address },
+        })
+      }
 
       const response = await WalletActions.addFunds(session.client, {
         address,
@@ -939,11 +907,7 @@ export class PortoService {
               value: BASE_SEPOLIA_FAUCET_VALUE,
             },
           ])
-
-          return {
-            id: fallback.transactionHash,
-            kind: 'faucet',
-          }
+          return { id: fallback.transactionHash, kind: 'faucet' }
         } catch (error) {
           const metadata = errorMetadata(error)
           throw new AppError(
@@ -957,12 +921,23 @@ export class PortoService {
         }
       }
 
-      return {
-        id: response.id,
-        kind: chain.id === Chains.baseSepolia.id ? 'faucet' : 'onramp',
-      }
+      return { id: response.id, kind: chain.id === Chains.baseSepolia.id ? 'faucet' : 'onramp' }
     } finally {
       session.close()
+    }
+  }
+
+  hasActiveSession(): boolean {
+    return sharedWalletSession !== undefined
+  }
+
+  async finalizeDialog(options: { title: string; content: string }) {
+    try {
+      const { messenger } = await import('porto/cli/Dialog')
+      messenger.send('success', { title: options.title, content: options.content })
+      await new Promise((resolve) => setTimeout(resolve, 300))
+    } catch {
+      // Non-fatal: no dialog may be open.
     }
   }
 

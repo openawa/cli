@@ -204,6 +204,41 @@ async function runAccountStep(
   return { checkpoint: { checkpoint: 'account', status, details: { address, chainId, permissionId } }, address, chainId, permissionId }
 }
 
+async function runFundingStep(
+  porto: PortoService,
+  address: `0x${string}`,
+  chainId: number | undefined,
+  dialogWasOpen: boolean,
+  isAgent: boolean,
+): Promise<boolean> {
+  const balanceInfo = await porto.balance({ address, chainId })
+  if (BigInt(balanceInfo.wei) > 0n) return true
+  if (isAgent) return false
+
+  if (dialogWasOpen) {
+    // Dialog session is still open — go straight to funding in the same tab.
+    try {
+      await porto.fund({ address, chainId, skipConnect: true })
+      return true
+    } catch {
+      p.log.warn('No funds yet — send funds to your address to get started.')
+      return false
+    }
+  }
+
+  // No dialog was open — ask first, then open a fresh one.
+  const answer = await p.confirm({ message: 'No funds detected. Fund your account now?' })
+  if (!p.isCancel(answer) && answer) {
+    try {
+      await porto.fund({ address, chainId })
+      return true
+    } catch {
+      p.log.warn('Funding skipped — send funds to your address to get started.')
+    }
+  }
+  return false
+}
+
 // ── Command ───────────────────────────────────────────────────────────────────
 
 export const configureCommand = Cli.create('configure', {
@@ -258,7 +293,19 @@ export const configureCommand = Cli.create('configure', {
     const accountResult = await runAccountStep(porto, config, c.options, chain, policy)
     p.log.step(`Account ready  (${accountResult.address})`)
 
-    p.outro('Setup complete!  Run `openawa status` to inspect your account.')
+    // ── Funding ───────────────────────────────────────────────────────────────
+    const { address, chainId } = accountResult
+    const dialogWasOpen = porto.hasActiveSession()
+    const funded = await runFundingStep(porto, address, chainId, dialogWasOpen, c.agent)
+
+    // Finalize the dialog (send success, lets the user close the tab).
+    await porto.finalizeDialog({ title: 'Setup complete', content: 'You can close this window.' })
+
+    p.outro(
+      funded
+        ? 'Setup complete!  Run `openawa sign` to submit your first transaction.'
+        : 'Setup complete!  Send funds to your account, then run `openawa sign`.',
+    )
 
     const result = {
       account: { address: accountResult.address, chainId: accountResult.chainId ?? config.porto?.chainIds?.[0] },
