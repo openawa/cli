@@ -15,9 +15,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@clack/prompts": "^1.0.1",
     "@chipkey/cli": "^0.5.1",
-    "incur": "^0.1.15",
+    "@clack/prompts": "^1.0.1",
+    "incur": "^0.2.2",
     "porto": "0.2.37",
     "viem": "^2.37.13"
   },

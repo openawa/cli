@@ -7,11 +7,11 @@
 - Workflow policy: `/Users/jean/src/github.com/jeanregisser/agent-wallet/AGENTS.md`
 
 Latest validation on this machine (2026-03-06):
-- `npm install --legacy-peer-deps` -> pass
-- `npm run typecheck` -> pass
-- `npm run build` -> pass
-- `npm run test` -> pass (`23 passed / 0 failed`)
-- `CHIPKEY_BINARY=... AGENT_WALLET_E2E_DEBUG=1 npx vitest run --project e2e test/e2e/flow.e2e.ts` -> pass (`1 passed / 0 failed`, ~21s)
+- `pnpm install` -> pass
+- `pnpm run typecheck` -> pass
+- `pnpm run build` -> pass
+- `pnpm run test` -> pass (`23 passed / 0 failed`)
+- `pnpm run test:e2e` -> pass (`1 passed / 0 failed`, ~26s)
 
 ## Key Insights (Precall Model)
 - Configure can be frictionless and still safe by using Porto precalls first (`wallet_grantPermissions`) and deferring activation to first real send.
@@ -60,7 +60,8 @@ Latest validation on this machine (2026-03-06):
 
 ## Done (2026-03-06)
 - Switched the chipkey npm dependency/import from `@jeanregisser/chipkey` to `@chipkey/cli`.
-- Refreshed `package-lock.json` against published `@chipkey/cli@0.5.1`.
+- Switched the repo package manager from npm to pnpm and replaced `package-lock.json` with `pnpm-lock.yaml`.
+- Upgraded `incur` from `0.1.17` to `0.2.2` and revalidated `typecheck`, `test`, and `test:e2e`.
 - Reduced the README local key management section to a single linked sentence pointing at `chipkey` and `@chipkey/cli`.
 
 ## Done (2026-03-03)
@@ -71,7 +72,7 @@ Latest validation on this machine (2026-03-06):
   - Fixed snapshot key ordering: Vitest `pretty-format` sorts object keys alphabetically, so `"11155420"` comes before `"84532"` in serialized `chains` objects.
   - Fixed `findGrantedPermission` helper: Porto returns 2 entries per permission (before/after state); added `chainId` filtering + changed `>` to `>=` in reduce so we always store the "after" state (entry 2, as-requested) rather than the "before" state (entry 1, stale relay cache).
   - Updated `configAfterRegrant` and `configAfterSecondChain` snapshots to reflect correct "after" state: single call entry without fee-relay address, `token: null` for native spend, correct 20e15 native limit (user 10e15 + fee 10e15).
-- `npm run test:e2e` → pass (`1 passed / 0 failed`, ~21s).
+- `pnpm run test:e2e` → pass (`1 passed / 0 failed`, ~21s).
 
 ## Done (2026-03-02)
 - Implemented proper multichain support (`--chain` flag, `chainIds[]` config, per-chain status).
