@@ -11,8 +11,12 @@
 - Update `README.md` only for overview/onboarding/status changes.
 
 ## Commit Style
+- Use Conventional Commits for commit titles (for example: `feat: ...`, `fix: ...`, `chore: ...`, `chore(deps): ...`).
 - Do not add a `Co-Authored-By` trailer to commits.
 
 ## Iteration Hygiene
 - At the end of each working session, update `docs/work-tracker.md` with remaining work and newly completed items.
 - Keep checklist items short, concrete, and testable.
+- When a durable repo-specific workflow rule, dependency policy, or repeated source of confusion becomes clear during work, update `AGENTS.md` in the same session so future runs inherit it.
+- Keep `Done` in `docs/work-tracker.md` as a short rolling summary of recent high-signal completions, not a full historical log.
+- Use git history as the source of truth for older completed work and trim stale `Done` entries once they stop helping the next session.
