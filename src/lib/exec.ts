@@ -35,16 +35,12 @@ export async function runCommand(command: string, args: string[], env?: NodeJS.P
       }
 
       reject(
-        new AppError(
-          'COMMAND_EXECUTION_FAILED',
-          `${command} exited with code ${code}`,
-          {
-            command,
-            args,
-            stderr: stderr.trim() || undefined,
-            stdout: stdout.trim() || undefined,
-          },
-        ),
+        new AppError('COMMAND_EXECUTION_FAILED', `${command} exited with code ${code}`, {
+          command,
+          args,
+          stderr: stderr.trim() || undefined,
+          stdout: stdout.trim() || undefined,
+        }),
       )
     })
   })

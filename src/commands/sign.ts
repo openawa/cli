@@ -10,7 +10,10 @@ export const signCommand = Cli.create('sign', {
   vars: varsSchema,
   options: z.object({
     calls: z.string().describe('Calls JSON payload'),
-    chain: z.string().optional().describe('Chain name or ID (required when multiple chains configured)'),
+    chain: z
+      .string()
+      .optional()
+      .describe('Chain name or ID (required when multiple chains configured)'),
     address: Address.optional().describe('Account address override'),
   }),
   alias: { chain: 'c' } as const,
@@ -22,8 +25,14 @@ export const signCommand = Cli.create('sign', {
     bundleId: z.string().optional(),
   }),
   examples: [
-    { options: { calls: '[{"to":"0x...","value":"0x0","data":"0x"}]', chain: 'base-sepolia' }, description: 'Sign a call on Base Sepolia' },
-    { options: { calls: '[{"to":"0x...","value":"0x0"}]' }, description: 'Sign when only one chain is configured' },
+    {
+      options: { calls: '[{"to":"0x...","value":"0x0","data":"0x"}]', chain: 'base-sepolia' },
+      description: 'Sign a call on Base Sepolia',
+    },
+    {
+      options: { calls: '[{"to":"0x...","value":"0x0"}]' },
+      description: 'Sign when only one chain is configured',
+    },
   ],
   async *run(c) {
     const { config, porto } = c.var

@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "ignorePatterns": ["dist/**", "node_modules/**", ".tmp/**"],
+  "plugins": ["typescript", "unicorn", "oxc", "node", "vitest"],
+  "rules": {
+    "no-unused-vars": "error",
+    "unicorn/no-useless-spread": "error",
+    "jest/no-focused-tests": "error",
+    "jest/valid-expect": "error"
+  }
+}

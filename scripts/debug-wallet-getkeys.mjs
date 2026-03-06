@@ -205,9 +205,7 @@ function formatExpiry(expiryValue) {
   const now = BigInt(Math.floor(Date.now() / 1000))
   const active = expiry > now
   const asNumber = Number(expiry)
-  const iso = Number.isFinite(asNumber)
-    ? new Date(asNumber * 1000).toISOString()
-    : 'out-of-range'
+  const iso = Number.isFinite(asNumber) ? new Date(asNumber * 1000).toISOString() : 'out-of-range'
 
   return { active, iso }
 }
@@ -258,7 +256,9 @@ async function waitForPersistedNormalKey({ account, chainId, rpcUrl, timeoutMs }
   let polls = 0
   while (Date.now() - startedAt <= timeoutMs) {
     polls += 1
-    const keysByChain = await rpc(rpcUrl, 'wallet_getKeys', [{ address: account, chainIds: [chainId] }])
+    const keysByChain = await rpc(rpcUrl, 'wallet_getKeys', [
+      { address: account, chainIds: [chainId] },
+    ])
     const chainKey = `0x${chainId.toString(16)}`
     const keys = Array.isArray(keysByChain?.[chainKey]) ? keysByChain[chainKey] : []
     const hasNormal = keys.some((key) => key?.role === 'normal')
@@ -533,9 +533,7 @@ async function addNormalKey(options) {
         rpcUrl: options.rpcUrl,
       })
       if (!faucet.skipped) {
-        console.log(
-          `[headless] faucet tx accepted (tx=${faucet.transactionHash ?? 'none'})`,
-        )
+        console.log(`[headless] faucet tx accepted (tx=${faucet.transactionHash ?? 'none'})`)
         console.log(
           `[headless] faucet tx confirmations=${faucet.confirmations} (target=${DEFAULT_FAUCET_CONFIRMATIONS}, confirmationPolls=${faucet.confirmationPolls}, waitMs=${faucet.confirmationWaitMs}, includedBlock=${faucet.includedInBlock}, latestBlock=${faucet.confirmedAtBlock})`,
         )
@@ -544,7 +542,9 @@ async function addNormalKey(options) {
         }
       }
 
-      console.log('[headless] activating granted key with session-signed wallet_sendPreparedCalls...')
+      console.log(
+        '[headless] activating granted key with session-signed wallet_sendPreparedCalls...',
+      )
       const activation = await activateGrantedPermissionOnchain({
         account: targetAddress,
         chain,
@@ -580,9 +580,7 @@ async function addNormalKey(options) {
         throw new Error('Mock account created but no granted permission was returned.')
       }
       permissionId = granted.id
-      console.log(
-        'Granted test non-admin key during wallet_connect (grantPermissions capability).',
-      )
+      console.log('Granted test non-admin key during wallet_connect (grantPermissions capability).')
     }
 
     console.log(`  permissionId: ${permissionId}`)

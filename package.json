@@ -2,17 +2,22 @@
   "name": "@openawa/cli",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "bin": {
     "openawa": "dist/cli.js"
   },
+  "type": "module",
   "scripts": {
     "build": "tsup",
+    "check": "npm-run-all --parallel typecheck lint format:check",
     "dev": "tsx src/cli.ts",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint --deny-warnings .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --project unit",
     "test:e2e": "pnpm run build && vitest run --project e2e",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepare": "husky"
   },
   "dependencies": {
     "@chipkey/cli": "^0.5.1",
@@ -24,11 +29,24 @@
   "devDependencies": {
     "@types/node": "^22.13.4",
     "execa": "^9.6.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.2",
     "node-pty": "^1.2.0-beta.11",
+    "npm-run-all2": "^8.0.4",
+    "oxfmt": "^0.36.0",
+    "oxlint": "^1.51.0",
     "playwright": "^1.58.2",
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
-  }
+  },
+  "lint-staged": {
+    "**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}": [
+      "oxlint --fix --deny-warnings",
+      "oxfmt"
+    ],
+    "**/*.{json,jsonc,md,yaml,yml}": "oxfmt"
+  },
+  "packageManager": "pnpm@10.30.3"
 }

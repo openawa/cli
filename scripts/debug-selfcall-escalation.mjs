@@ -143,7 +143,8 @@ function shortHex(value) {
 
 function resolveChainRpcUrl(chain) {
   const rpcUrl = chain?.rpcUrls?.default?.http?.[0]
-  if (!rpcUrl) throw new Error(`Missing public RPC URL for chain ${String(chain?.id ?? 'unknown')}.`)
+  if (!rpcUrl)
+    throw new Error(`Missing public RPC URL for chain ${String(chain?.id ?? 'unknown')}.`)
   return rpcUrl
 }
 
@@ -266,7 +267,9 @@ async function waitForBundleTerminal({ bundleId, rpcUrl, timeoutMs }) {
 }
 
 async function getWalletKeys({ account, chainId, rpcUrl }) {
-  const keysByChain = await rpc(rpcUrl, 'wallet_getKeys', [{ address: account, chainIds: [chainId] }])
+  const keysByChain = await rpc(rpcUrl, 'wallet_getKeys', [
+    { address: account, chainIds: [chainId] },
+  ])
   const chainHex = `0x${chainId.toString(16)}`
   const keys = Array.isArray(keysByChain?.[chainHex]) ? keysByChain[chainHex] : []
   return keys
@@ -475,7 +478,9 @@ async function main() {
         },
       ],
     })
-    console.log(`      call: account.authorize(superAdmin=TRUE, key=${candidateAdminAccount.address})`)
+    console.log(
+      `      call: account.authorize(superAdmin=TRUE, key=${candidateAdminAccount.address})`,
+    )
     const sent = await sendPreparedSigned({
       calls: [{ to: account, value: 0n, data: authorizeEscalationData }],
       chain,

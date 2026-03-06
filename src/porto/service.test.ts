@@ -18,16 +18,16 @@ function makeConfig(chainIds: number[]): AgentWalletConfig {
 
 describe('getChainByIdOrName', () => {
   it.each([
-    [8453,           BASE_ID],
-    ['8453',         BASE_ID],
-    ['base',         BASE_ID],
+    [8453, BASE_ID],
+    ['8453', BASE_ID],
+    ['base', BASE_ID],
     ['base-sepolia', BASE_SEPOLIA_ID],
     ['Base Sepolia', BASE_SEPOLIA_ID],
-    ['BASESEPOLIA',  BASE_SEPOLIA_ID],
-    ['op-mainnet',   OP_MAINNET_ID],
-    ['op-sepolia',   OP_SEPOLIA_ID],
-    [99999,          undefined],
-    ['not-a-chain',  undefined],
+    ['BASESEPOLIA', BASE_SEPOLIA_ID],
+    ['op-mainnet', OP_MAINNET_ID],
+    ['op-sepolia', OP_SEPOLIA_ID],
+    [99999, undefined],
+    ['not-a-chain', undefined],
   ] as const)('resolves %s → %s', (input, expectedId) => {
     expect(getChainByIdOrName(input)?.id).toBe(expectedId)
   })
@@ -64,7 +64,9 @@ describe('resolveCommandChain', () => {
 
   describe('with --chain flag', () => {
     it('resolves by chain name', () => {
-      expect(resolveCommandChain(makeConfig([BASE_SEPOLIA_ID]), 'base-sepolia').id).toBe(BASE_SEPOLIA_ID)
+      expect(resolveCommandChain(makeConfig([BASE_SEPOLIA_ID]), 'base-sepolia').id).toBe(
+        BASE_SEPOLIA_ID,
+      )
     })
 
     it('resolves by chain ID string', () => {
@@ -72,7 +74,9 @@ describe('resolveCommandChain', () => {
     })
 
     it('resolves when multiple chains configured and flag selects one', () => {
-      expect(resolveCommandChain(makeConfig([BASE_ID, OP_SEPOLIA_ID]), 'op-sepolia').id).toBe(OP_SEPOLIA_ID)
+      expect(resolveCommandChain(makeConfig([BASE_ID, OP_SEPOLIA_ID]), 'op-sepolia').id).toBe(
+        OP_SEPOLIA_ID,
+      )
     })
 
     it('throws INVALID_CHAIN for an unknown chain name', () => {

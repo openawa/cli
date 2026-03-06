@@ -3,7 +3,6 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   buildConfigureArgs,
   extractDialogUrl,
-  getLiveNetwork,
   launchVirtualBrowser,
   makeIsolatedEnv,
   readAgentWalletConfig,
@@ -66,8 +65,8 @@ describe('e2e flow', () => {
     'configure → sign → status → idempotent rerun → regrant → second chain',
     async () => {
       const env = await makeIsolatedEnv()
-      const network = getLiveNetwork()
-      const allowlistTo = (process.env.AGENT_WALLET_E2E_ALLOWLIST_TO ?? DEAD_ADDRESS) as `0x${string}`
+      const allowlistTo = (process.env.AGENT_WALLET_E2E_ALLOWLIST_TO ??
+        DEAD_ADDRESS) as `0x${string}`
       const dialogHost = process.env.AGENT_WALLET_E2E_DIALOG_HOST
 
       const browser = await launchVirtualBrowser()
@@ -77,7 +76,16 @@ describe('e2e flow', () => {
       // ── Configure: create account + grant permissions ───────────────────────
 
       const configure = spawnCliInteractive(
-        buildConfigureArgs({ calls: [allowlistTo], chain: 'base-sepolia', createAccount: true, dialogHost, json: true, spendLimit: '0.01', spendPeriod: 'day', expiry: '7' }),
+        buildConfigureArgs({
+          calls: [allowlistTo],
+          chain: 'base-sepolia',
+          createAccount: true,
+          dialogHost,
+          json: true,
+          spendLimit: '0.01',
+          spendPeriod: 'day',
+          expiry: '7',
+        }),
         env.env,
       )
 
@@ -93,17 +101,20 @@ describe('e2e flow', () => {
       await page.getByTestId('buy').click({ timeout: 30_000 })
 
       const configureResult = await configure.done()
-      expect(
-        configureResult.exitCode,
-        `configure failed:\nstdout: ${configureResult.stdout}\nstderr: ${configureResult.stderr}`,
-      ).toBe(0)
-      expect(configureResult.payload).toMatchInlineSnapshot({
-        account: { address: expect.any(String) },
-        checkpoints: [
-          { details: { keyId: expect.any(String), publicKey: expect.any(String) } },
-          { details: { address: expect.any(String), permissionId: expect.any(String) } },
-        ],
-      }, `
+      if (configureResult.exitCode !== 0) {
+        throw new Error(
+          `configure failed:\nstdout: ${configureResult.stdout}\nstderr: ${configureResult.stderr}`,
+        )
+      }
+      expect(configureResult.payload).toMatchInlineSnapshot(
+        {
+          account: { address: expect.any(String) },
+          checkpoints: [
+            { details: { keyId: expect.any(String), publicKey: expect.any(String) } },
+            { details: { address: expect.any(String), permissionId: expect.any(String) } },
+          ],
+        },
+        `
         {
           "account": {
             "address": Any<String>,
@@ -133,32 +144,37 @@ describe('e2e flow', () => {
           "poweredBy": "Porto",
           "setupMode": "local-admin",
         }
-      `)
+      `,
+      )
 
       // ── Get account details ───────────────────────────────────────────────
 
       const statusCheck = await runCli(['status', '--json'], env.env)
       expect(statusCheck.exitCode).toBe(0)
-      const account = (statusCheck.payload as Record<string, unknown>)?.account as { address: `0x${string}` }
+      const account = (statusCheck.payload as Record<string, unknown>)?.account as {
+        address: `0x${string}`
+      }
       const accountAddress = account.address
       // After configure, precall is stored locally. The permission may already be
       // on-chain (createAccount submits a tx) or still precall-pending.
-      expect(statusCheck.payload).toMatchInlineSnapshot({
-        account: { address: expect.any(String) },
-        activation: { state: expect.any(String) },
-        chains: {
-          '84532': {
-            balance: { formatted: expect.any(String) },
-            permissions: {
-              active: expect.any(Number),
-              latestExpiry: expect.toSatisfy((v) => v === null || typeof v === 'string'),
-              total: expect.any(Number),
+      expect(statusCheck.payload).toMatchInlineSnapshot(
+        {
+          account: { address: expect.any(String) },
+          activation: { state: expect.any(String) },
+          chains: {
+            '84532': {
+              balance: { formatted: expect.any(String) },
+              permissions: {
+                active: expect.any(Number),
+                latestExpiry: expect.toSatisfy((v) => v === null || typeof v === 'string'),
+                total: expect.any(Number),
+              },
             },
           },
+          precallPermissions: [{ expiry: expect.any(String), id: expect.any(String) }],
+          signer: { keyId: expect.any(String) },
         },
-        precallPermissions: [{ expiry: expect.any(String), id: expect.any(String) }],
-        signer: { keyId: expect.any(String) },
-      }, `
+        `
         {
           "account": {
             "address": Any<String>,
@@ -198,26 +214,29 @@ describe('e2e flow', () => {
           },
           "warnings": [],
         }
-      `)
+      `,
+      )
 
       // ── Sign an allowed call ──────────────────────────────────────────────
 
       const allowedResult = await runCli(
-        ['sign', '--json', '--calls', JSON.stringify([{ data: '0x', to: allowlistTo, value: '0x0' }])],
+        [
+          'sign',
+          '--json',
+          '--calls',
+          JSON.stringify([{ data: '0x', to: allowlistTo, value: '0x0' }]),
+        ],
         env.env,
         180_000,
       )
-      expect(
-        allowedResult.exitCode,
-        `allowed sign failed:\nstdout: ${allowedResult.stdout}\nstderr: ${allowedResult.stderr}`,
-      ).toBe(0)
-      expect(allowedResult.payload).toMatchInlineSnapshot([
-        {},
-        {},
-        {},
-        {},
-        { bundleId: expect.any(String), txHash: expect.any(String) },
-      ], `
+      if (allowedResult.exitCode !== 0) {
+        throw new Error(
+          `allowed sign failed:\nstdout: ${allowedResult.stdout}\nstderr: ${allowedResult.stderr}`,
+        )
+      }
+      expect(allowedResult.payload).toMatchInlineSnapshot(
+        [{}, {}, {}, {}, { bundleId: expect.any(String), txHash: expect.any(String) }],
+        `
         [
           {
             "stage": "prepare_calls",
@@ -239,46 +258,59 @@ describe('e2e flow', () => {
             "txHash": Any<String>,
           },
         ]
-      `)
+      `,
+      )
 
       // ── Reject a disallowed call ──────────────────────────────────────────
 
       const disallowedTo = allowlistTo.toLowerCase() === ZERO_ADDRESS ? DEAD_ADDRESS : ZERO_ADDRESS
       const disallowedResult = await runCli(
-        ['sign', '--json', '--calls', JSON.stringify([{ data: '0x', to: disallowedTo, value: '0x0' }])],
+        [
+          'sign',
+          '--json',
+          '--calls',
+          JSON.stringify([{ data: '0x', to: disallowedTo, value: '0x0' }]),
+        ],
         env.env,
       )
       expect(disallowedResult.exitCode).not.toBe(0)
-      expect(disallowedResult.payload).toMatchInlineSnapshot({
-        message: expect.stringContaining('UnauthorizedCall'),
-      }, `
+      expect(disallowedResult.payload).toMatchInlineSnapshot(
+        {
+          message: expect.stringContaining('UnauthorizedCall'),
+        },
+        `
         {
           "code": "PORTO_SEND_PREPARE_FAILED",
           "message": StringContaining "UnauthorizedCall",
         }
-      `)
+      `,
+      )
 
       // ── Status: verify full state in json and toon modes ──────────────────
 
       const jsonStatus = await runCli(['status', '--json'], env.env)
       expect(jsonStatus.exitCode).toBe(0)
-      const statusAccount = (jsonStatus.payload as Record<string, unknown>)?.account as { address: string }
+      const statusAccount = (jsonStatus.payload as Record<string, unknown>)?.account as {
+        address: string
+      }
       expect(statusAccount?.address?.toLowerCase()).toBe(accountAddress.toLowerCase())
-      expect(jsonStatus.payload).toMatchInlineSnapshot({
-        account: { address: expect.any(String) },
-        activation: { state: expect.any(String) },
-        chains: {
-          '84532': {
-            balance: { formatted: expect.any(String) },
-            permissions: {
-              active: expect.any(Number),
-              latestExpiry: expect.toSatisfy((v) => v === null || typeof v === 'string'),
-              total: expect.any(Number),
+      expect(jsonStatus.payload).toMatchInlineSnapshot(
+        {
+          account: { address: expect.any(String) },
+          activation: { state: expect.any(String) },
+          chains: {
+            '84532': {
+              balance: { formatted: expect.any(String) },
+              permissions: {
+                active: expect.any(Number),
+                latestExpiry: expect.toSatisfy((v) => v === null || typeof v === 'string'),
+                total: expect.any(Number),
+              },
             },
           },
+          signer: { keyId: expect.any(String) },
         },
-        signer: { keyId: expect.any(String) },
-      }, `
+        `
         {
           "account": {
             "address": Any<String>,
@@ -312,12 +344,21 @@ describe('e2e flow', () => {
           },
           "warnings": [],
         }
-      `)
+      `,
+      )
 
       // ── Rerun configure: verify idempotency ───────────────────────────────
 
       const rerun = spawnCliInteractive(
-        buildConfigureArgs({ calls: [allowlistTo], chain: 'base-sepolia', dialogHost, json: true, spendLimit: '0.01', spendPeriod: 'day', expiry: '7' }),
+        buildConfigureArgs({
+          calls: [allowlistTo],
+          chain: 'base-sepolia',
+          dialogHost,
+          json: true,
+          spendLimit: '0.01',
+          spendPeriod: 'day',
+          expiry: '7',
+        }),
         env.env,
       )
 
@@ -342,10 +383,12 @@ describe('e2e flow', () => {
 
       const config = await readAgentWalletConfig(env.configHome)
       expect(config.porto?.address?.toLowerCase()).toBe(accountAddress.toLowerCase())
-      expect(config).toMatchInlineSnapshot({
-        porto: { address: expect.any(String) },
-        signer: { keyId: expect.any(String) },
-      }, `
+      expect(config).toMatchInlineSnapshot(
+        {
+          porto: { address: expect.any(String) },
+          signer: { keyId: expect.any(String) },
+        },
+        `
         {
           "porto": {
             "address": Any<String>,
@@ -361,12 +404,21 @@ describe('e2e flow', () => {
           },
           "version": 1,
         }
-      `)
+      `,
+      )
 
       // ── Regrant: force grant path by changing spend limit ─────────────────
 
       const regrant = spawnCliInteractive(
-        buildConfigureArgs({ calls: [allowlistTo], chain: 'base-sepolia', dialogHost, json: true, spendLimit: '0.02', spendPeriod: 'day', expiry: '7' }),
+        buildConfigureArgs({
+          calls: [allowlistTo],
+          chain: 'base-sepolia',
+          dialogHost,
+          json: true,
+          spendLimit: '0.02',
+          spendPeriod: 'day',
+          expiry: '7',
+        }),
         env.env,
       )
 
@@ -376,10 +428,11 @@ describe('e2e flow', () => {
       await page.getByTestId('sign-in').click()
 
       const regrantResult = await regrant.done()
-      expect(
-        regrantResult.exitCode,
-        `regrant failed:\nstdout: ${regrantResult.stdout}\nstderr: ${regrantResult.stderr}`,
-      ).toBe(0)
+      if (regrantResult.exitCode !== 0) {
+        throw new Error(
+          `regrant failed:\nstdout: ${regrantResult.stdout}\nstderr: ${regrantResult.stderr}`,
+        )
+      }
 
       const regrantCheckpoints = parseCheckpoints(regrantResult.payload)
       expect(regrantCheckpoints.get('agent_key')).toBe('already_ok')
@@ -389,18 +442,22 @@ describe('e2e flow', () => {
 
       const configAfterRegrant = await readAgentWalletConfig(env.configHome)
       expect(configAfterRegrant.porto?.address?.toLowerCase()).toBe(accountAddress.toLowerCase())
-      expect(configAfterRegrant).toMatchInlineSnapshot({
-        porto: {
-          address: expect.any(String),
-          precallPermissions: [{
+      expect(configAfterRegrant).toMatchInlineSnapshot(
+        {
+          porto: {
             address: expect.any(String),
-            expiry: expect.any(Number),
-            id: expect.any(String),
-            key: { publicKey: expect.any(String) },
-          }],
+            precallPermissions: [
+              {
+                address: expect.any(String),
+                expiry: expect.any(Number),
+                id: expect.any(String),
+                key: { publicKey: expect.any(String) },
+              },
+            ],
+          },
+          signer: { keyId: expect.any(String) },
         },
-        signer: { keyId: expect.any(String) },
-      }, `
+        `
         {
           "porto": {
             "address": Any<String>,
@@ -446,12 +503,20 @@ describe('e2e flow', () => {
           },
           "version": 1,
         }
-      `)
+      `,
+      )
 
       // ── Second chain: configure OP Sepolia ────────────────────────────────
 
       const secondChain = spawnCliInteractive(
-        buildConfigureArgs({ chain: 'op-sepolia', dialogHost, json: true, spendLimit: '0.01', spendPeriod: 'day', expiry: '7' }),
+        buildConfigureArgs({
+          chain: 'op-sepolia',
+          dialogHost,
+          json: true,
+          spendLimit: '0.01',
+          spendPeriod: 'day',
+          expiry: '7',
+        }),
         env.env,
       )
 
@@ -464,10 +529,11 @@ describe('e2e flow', () => {
       await page.getByTestId('buy').click({ timeout: 30_000 })
 
       const secondChainResult = await secondChain.done()
-      expect(
-        secondChainResult.exitCode,
-        `second chain configure failed:\nstdout: ${secondChainResult.stdout}\nstderr: ${secondChainResult.stderr}`,
-      ).toBe(0)
+      if (secondChainResult.exitCode !== 0) {
+        throw new Error(
+          `second chain configure failed:\nstdout: ${secondChainResult.stdout}\nstderr: ${secondChainResult.stderr}`,
+        )
+      }
 
       const secondChainCheckpoints = parseCheckpoints(secondChainResult.payload)
       expect(secondChainCheckpoints.get('agent_key')).toBe('already_ok')
@@ -477,33 +543,35 @@ describe('e2e flow', () => {
 
       const multiChainStatus = await runCli(['status', '--json'], env.env)
       expect(multiChainStatus.exitCode).toBe(0)
-      expect(multiChainStatus.payload).toMatchInlineSnapshot({
-        account: { address: expect.any(String) },
-        activation: { state: expect.any(String) },
-        chains: {
-          '11155420': {
-            balance: { formatted: expect.any(String) },
-            permissions: {
-              active: expect.any(Number),
-              latestExpiry: expect.toSatisfy((v) => v === null || typeof v === 'string'),
-              total: expect.any(Number),
+      expect(multiChainStatus.payload).toMatchInlineSnapshot(
+        {
+          account: { address: expect.any(String) },
+          activation: { state: expect.any(String) },
+          chains: {
+            '11155420': {
+              balance: { formatted: expect.any(String) },
+              permissions: {
+                active: expect.any(Number),
+                latestExpiry: expect.toSatisfy((v) => v === null || typeof v === 'string'),
+                total: expect.any(Number),
+              },
+            },
+            '84532': {
+              balance: { formatted: expect.any(String) },
+              permissions: {
+                active: expect.any(Number),
+                latestExpiry: expect.toSatisfy((v) => v === null || typeof v === 'string'),
+                total: expect.any(Number),
+              },
             },
           },
-          '84532': {
-            balance: { formatted: expect.any(String) },
-            permissions: {
-              active: expect.any(Number),
-              latestExpiry: expect.toSatisfy((v) => v === null || typeof v === 'string'),
-              total: expect.any(Number),
-            },
-          },
+          precallPermissions: [
+            { expiry: expect.any(String), id: expect.any(String) },
+            { expiry: expect.any(String), id: expect.any(String) },
+          ],
+          signer: { keyId: expect.any(String) },
         },
-        precallPermissions: [
-          { expiry: expect.any(String), id: expect.any(String) },
-          { expiry: expect.any(String), id: expect.any(String) },
-        ],
-        signer: { keyId: expect.any(String) },
-      }, `
+        `
         {
           "account": {
             "address": Any<String>,
@@ -561,32 +629,37 @@ describe('e2e flow', () => {
           },
           "warnings": [],
         }
-      `)
+      `,
+      )
 
       // ── Verify persisted config after second chain ─────────────────────────
 
       const configAfterSecondChain = await readAgentWalletConfig(env.configHome)
-      expect(configAfterSecondChain.porto?.address?.toLowerCase()).toBe(accountAddress.toLowerCase())
-      expect(configAfterSecondChain).toMatchInlineSnapshot({
-        porto: {
-          address: expect.any(String),
-          precallPermissions: [
-            {
-              address: expect.any(String),
-              expiry: expect.any(Number),
-              id: expect.any(String),
-              key: { publicKey: expect.any(String) },
-            },
-            {
-              address: expect.any(String),
-              expiry: expect.any(Number),
-              id: expect.any(String),
-              key: { publicKey: expect.any(String) },
-            },
-          ],
+      expect(configAfterSecondChain.porto?.address?.toLowerCase()).toBe(
+        accountAddress.toLowerCase(),
+      )
+      expect(configAfterSecondChain).toMatchInlineSnapshot(
+        {
+          porto: {
+            address: expect.any(String),
+            precallPermissions: [
+              {
+                address: expect.any(String),
+                expiry: expect.any(Number),
+                id: expect.any(String),
+                key: { publicKey: expect.any(String) },
+              },
+              {
+                address: expect.any(String),
+                expiry: expect.any(Number),
+                id: expect.any(String),
+                key: { publicKey: expect.any(String) },
+              },
+            ],
+          },
+          signer: { keyId: expect.any(String) },
         },
-        signer: { keyId: expect.any(String) },
-      }, `
+        `
         {
           "porto": {
             "address": Any<String>,
@@ -658,29 +731,40 @@ describe('e2e flow', () => {
           },
           "version": 1,
         }
-      `)
+      `,
+      )
 
       // ── Sign without --chain fails with AMBIGUOUS_CHAIN ───────────────────
 
       const ambiguousSign = await runCli(
-        ['sign', '--json', '--calls', JSON.stringify([{ data: '0x', to: allowlistTo, value: '0x0' }])],
+        [
+          'sign',
+          '--json',
+          '--calls',
+          JSON.stringify([{ data: '0x', to: allowlistTo, value: '0x0' }]),
+        ],
         env.env,
       )
       expect(ambiguousSign.exitCode).not.toBe(0)
-      expect(ambiguousSign.payload).toMatchInlineSnapshot({
-        message: expect.stringContaining('chain'),
-      }, `
+      expect(ambiguousSign.payload).toMatchInlineSnapshot(
+        {
+          message: expect.stringContaining('chain'),
+        },
+        `
         {
           "code": "AMBIGUOUS_CHAIN",
           "message": StringContaining "chain",
         }
-      `)
+      `,
+      )
     },
     FLOW_TIMEOUT_MS,
   )
 })
 
-function parseCheckpoints(payload: Record<string, unknown> | unknown[] | null): Map<string, string> {
+function parseCheckpoints(
+  payload: Record<string, unknown> | unknown[] | null,
+): Map<string, string> {
   const map = new Map<string, string>()
   if (!payload || Array.isArray(payload)) return map
   const checkpoints = payload.checkpoints

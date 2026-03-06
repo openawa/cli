@@ -23,7 +23,10 @@ export async function promptPermissionPolicy(opts: {
     message: 'Allow calls to any contract?',
     initialValue: opts.prefill?.calls == null,
   })
-  if (p.isCancel(anyTarget)) { p.cancel('Cancelled'); process.exit(0) }
+  if (p.isCancel(anyTarget)) {
+    p.cancel('Cancelled')
+    process.exit(0)
+  }
 
   let calls: PermissionPolicy['calls'] = null
   if (!anyTarget) {
@@ -32,20 +35,30 @@ export async function promptPermissionPolicy(opts: {
     while (addMore) {
       const to = await p.text({
         message: 'Contract address (0x...):',
-        validate: (v) => /^0x[0-9a-fA-F]{40}$/.test(v ?? '') ? undefined : 'Must be a valid 0x address',
+        validate: (v) =>
+          /^0x[0-9a-fA-F]{40}$/.test(v ?? '') ? undefined : 'Must be a valid 0x address',
       })
-      if (p.isCancel(to)) { p.cancel('Cancelled'); process.exit(0) }
+      if (p.isCancel(to)) {
+        p.cancel('Cancelled')
+        process.exit(0)
+      }
 
       const sig = await p.text({
         message: 'Function signature (leave blank for any):',
         placeholder: 'transfer(address,uint256)',
       })
-      if (p.isCancel(sig)) { p.cancel('Cancelled'); process.exit(0) }
+      if (p.isCancel(sig)) {
+        p.cancel('Cancelled')
+        process.exit(0)
+      }
 
       calls.push({ to: to as `0x${string}`, ...(sig ? { signature: sig as `0x${string}` } : {}) })
 
       const more = await p.confirm({ message: 'Add another allowed call?', initialValue: false })
-      if (p.isCancel(more)) { p.cancel('Cancelled'); process.exit(0) }
+      if (p.isCancel(more)) {
+        p.cancel('Cancelled')
+        process.exit(0)
+      }
       addMore = Boolean(more)
     }
   }
@@ -56,7 +69,10 @@ export async function promptPermissionPolicy(opts: {
     initialValue: opts.prefill?.spendPeriod ?? 'day',
     options: SPEND_PERIODS.map((period) => ({ value: period, label: period })),
   })
-  if (p.isCancel(spendPeriod)) { p.cancel('Cancelled'); process.exit(0) }
+  if (p.isCancel(spendPeriod)) {
+    p.cancel('Cancelled')
+    process.exit(0)
+  }
 
   const spendTokenStr = await p.text({
     message: 'Spend token address (leave blank for native ETH):',
@@ -64,11 +80,16 @@ export async function promptPermissionPolicy(opts: {
     initialValue: opts.prefill?.spendToken ?? '',
     validate: (v) => {
       if (!v) return undefined
-      return /^0x[0-9a-fA-F]{40}$/.test(v) ? undefined : 'Must be a valid 0x address or blank for native'
+      return /^0x[0-9a-fA-F]{40}$/.test(v)
+        ? undefined
+        : 'Must be a valid 0x address or blank for native'
     },
   })
-  if (p.isCancel(spendTokenStr)) { p.cancel('Cancelled'); process.exit(0) }
-  const spendToken = spendTokenStr ? spendTokenStr as `0x${string}` : undefined
+  if (p.isCancel(spendTokenStr)) {
+    p.cancel('Cancelled')
+    process.exit(0)
+  }
+  const spendToken = spendTokenStr ? (spendTokenStr as `0x${string}`) : undefined
 
   const spendUnit = spendToken ? 'tokens' : 'ETH'
   const spendAmount = await p.text({
@@ -76,11 +97,18 @@ export async function promptPermissionPolicy(opts: {
     placeholder: '0.01',
     initialValue: opts.prefill?.spendLimit ?? '0.01',
     validate: (v) => {
-      try { parseEther(v as `${number}`); return undefined }
-      catch { return `Must be a valid amount (e.g. 0.01)` }
+      try {
+        parseEther(v as `${number}`)
+        return undefined
+      } catch {
+        return `Must be a valid amount (e.g. 0.01)`
+      }
     },
   })
-  if (p.isCancel(spendAmount)) { p.cancel('Cancelled'); process.exit(0) }
+  if (p.isCancel(spendAmount)) {
+    p.cancel('Cancelled')
+    process.exit(0)
+  }
 
   // Base Sepolia uses EXP (non-native fee token); all other chains use native currency
   const isBaseSepolia = opts.chain.id === Chains.baseSepolia.id
@@ -90,9 +118,12 @@ export async function promptPermissionPolicy(opts: {
     message: `Fee cap per period (${feeUnit}):`,
     placeholder: defaultFeeLimit,
     initialValue: opts.prefill?.feeLimit ?? defaultFeeLimit,
-    validate: (v) => isNaN(Number(v)) ? `Must be a valid ${feeUnit} amount` : undefined,
+    validate: (v) => (isNaN(Number(v)) ? `Must be a valid ${feeUnit} amount` : undefined),
   })
-  if (p.isCancel(feeLimit)) { p.cancel('Cancelled'); process.exit(0) }
+  if (p.isCancel(feeLimit)) {
+    p.cancel('Cancelled')
+    process.exit(0)
+  }
 
   // ── Expiry ──────────────────────────────────────────────────────────
   const expiryDaysStr = await p.text({
@@ -104,15 +135,19 @@ export async function promptPermissionPolicy(opts: {
       return isNaN(n) || n < 1 ? 'Must be a positive integer' : undefined
     },
   })
-  if (p.isCancel(expiryDaysStr)) { p.cancel('Cancelled'); process.exit(0) }
+  if (p.isCancel(expiryDaysStr)) {
+    p.cancel('Cancelled')
+    process.exit(0)
+  }
 
   const spendLimitWei = parseEther(spendAmount as `${number}`)
   const expiryDays = parseInt(expiryDaysStr as string, 10)
 
   // ── Summary ──────────────────────────────────────────────────────────
-  const callsLine = calls == null
-    ? 'any'
-    : calls.map((c) => `${c.to}${c.signature ? ` — ${c.signature}` : ''}`).join('\n  • ')
+  const callsLine =
+    calls == null
+      ? 'any'
+      : calls.map((c) => `${c.to}${c.signature ? ` — ${c.signature}` : ''}`).join('\n  • ')
   p.note(
     [
       `Allowed calls:  ${calls == null ? callsLine : `\n  • ${callsLine}`}`,
@@ -124,7 +159,10 @@ export async function promptPermissionPolicy(opts: {
   )
 
   const confirmed = await p.confirm({ message: 'Grant these permissions?', initialValue: true })
-  if (p.isCancel(confirmed) || !confirmed) { p.cancel('Cancelled'); process.exit(0) }
+  if (p.isCancel(confirmed) || !confirmed) {
+    p.cancel('Cancelled')
+    process.exit(0)
+  }
 
   return {
     calls,

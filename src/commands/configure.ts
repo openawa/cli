@@ -1,7 +1,7 @@
 import * as p from '@clack/prompts'
 import { Cli, z } from 'incur'
 import { Chains } from 'porto'
-import { parseEther, type Chain } from 'viem'
+import { type Chain } from 'viem'
 import { varsSchema } from '../lib/vars.js'
 import { saveConfig, type AgentWalletConfig } from '../lib/config.js'
 import { AppError } from '../lib/errors.js'
@@ -85,7 +85,10 @@ type ConfigureOptions = {
   spendToken?: string
 }
 
-async function resolvePermissionPolicy(options: ConfigureOptions, chain: Chain): Promise<PermissionPolicy> {
+async function resolvePermissionPolicy(
+  options: ConfigureOptions,
+  chain: Chain,
+): Promise<PermissionPolicy> {
   const prefillCalls = options.call?.length ? options.call.map(parseCallArg) : undefined
 
   return promptPermissionPolicy({
@@ -103,12 +106,19 @@ async function resolvePermissionPolicy(options: ConfigureOptions, chain: Chain):
 
 // ── Steps ─────────────────────────────────────────────────────────────────────
 
-async function runAgentKeyStep(signer: SignerService, config: AgentWalletConfig): Promise<ConfigureCheckpoint> {
+async function runAgentKeyStep(
+  signer: SignerService,
+  config: AgentWalletConfig,
+): Promise<ConfigureCheckpoint> {
   const initialized = await signer.init()
   const { publicKey } = await signer.getPortoKey()
   saveConfig(config)
   const status = initialized.created ? 'created' : 'already_ok'
-  return { checkpoint: 'agent_key', status, details: { backend: initialized.backend, keyId: initialized.keyId, publicKey } }
+  return {
+    checkpoint: 'agent_key',
+    status,
+    details: { backend: initialized.backend, keyId: initialized.keyId, publicKey },
+  }
 }
 
 type AccountStepResult = {
@@ -169,7 +179,12 @@ async function runAccountStep(
     }
   }
 
-  return { checkpoint: { checkpoint: 'account', status, details: { address, chainId, permissionId } }, address, chainId, permissionId }
+  return {
+    checkpoint: { checkpoint: 'account', status, details: { address, chainId, permissionId } },
+    address,
+    chainId,
+    permissionId,
+  }
 }
 
 async function runFundingStep(
@@ -213,8 +228,14 @@ export const configureCommand = Cli.create('configure', {
     dialog: z.string().default('id.porto.sh').describe('Dialog host for Porto grant UI'),
     createAccount: z.boolean().optional().describe('Force creation of a new account'),
     call: z.array(z.string()).optional().describe('Allowed call: address[:signature] (repeatable)'),
-    spendLimit: z.number().optional().describe('Spend limit as a decimal (ETH or --spend-token units)'),
-    spendPeriod: z.enum(['minute', 'hour', 'day', 'week', 'month', 'year']).default('day').describe('Spend period'),
+    spendLimit: z
+      .number()
+      .optional()
+      .describe('Spend limit as a decimal (ETH or --spend-token units)'),
+    spendPeriod: z
+      .enum(['minute', 'hour', 'day', 'week', 'month', 'year'])
+      .default('day')
+      .describe('Spend period'),
     expiry: z.number().int().optional().describe('Permission validity in days'),
     spendToken: Address.optional().describe('ERC-20 token address (default: native ETH)'),
     feeLimit: z.number().optional().describe('Fee cap per period'),
@@ -222,21 +243,40 @@ export const configureCommand = Cli.create('configure', {
   alias: { chain: 'c' } as const,
   output: z.object({
     account: z.object({ address: z.string(), chainId: z.number().optional() }),
-    checkpoints: z.array(z.object({
-      checkpoint: z.enum(['account', 'agent_key']),
-      status: z.enum(['already_ok', 'created', 'updated', 'skipped', 'failed']),
-      details: z.record(z.string(), z.unknown()).optional(),
-    })),
+    checkpoints: z.array(
+      z.object({
+        checkpoint: z.enum(['account', 'agent_key']),
+        status: z.enum(['already_ok', 'created', 'updated', 'skipped', 'failed']),
+        details: z.record(z.string(), z.unknown()).optional(),
+      }),
+    ),
     command: z.literal('configure'),
     poweredBy: z.string(),
     setupMode: z.literal('local-admin'),
   }),
   examples: [
     { description: 'Interactive setup' },
-    { options: { chain: 'base-sepolia', spendLimit: 0.01, expiry: 7 }, description: 'Non-interactive' },
-    { options: { chain: 'base', call: ['0xA0b8…eB48', '0xdead…beef'], spendLimit: 0.01, expiry: 7 }, description: 'Multiple allowed contracts' },
-    { options: { chain: 'base', call: ['0xA0b8…eB48:transfer(address,uint256)'], spendLimit: 0.01, expiry: 7 }, description: 'Allowlist with function selector' },
-    { options: { chain: 'base', spendToken: '0xA0b8…eB48', spendLimit: 100, expiry: 30 }, description: 'ERC-20 spend limit' },
+    {
+      options: { chain: 'base-sepolia', spendLimit: 0.01, expiry: 7 },
+      description: 'Non-interactive',
+    },
+    {
+      options: { chain: 'base', call: ['0xA0b8…eB48', '0xdead…beef'], spendLimit: 0.01, expiry: 7 },
+      description: 'Multiple allowed contracts',
+    },
+    {
+      options: {
+        chain: 'base',
+        call: ['0xA0b8…eB48:transfer(address,uint256)'],
+        spendLimit: 0.01,
+        expiry: 7,
+      },
+      description: 'Allowlist with function selector',
+    },
+    {
+      options: { chain: 'base', spendToken: '0xA0b8…eB48', spendLimit: 100, expiry: 30 },
+      description: 'ERC-20 spend limit',
+    },
   ],
   async run(c) {
     const { config, porto, signer } = c.var
@@ -244,7 +284,11 @@ export const configureCommand = Cli.create('configure', {
     p.intro('Configure wallet  ·  local-admin')
 
     const agentKeyCheckpoint = await runAgentKeyStep(signer, config)
-    const { keyId, publicKey } = agentKeyCheckpoint.details as { keyId: string; backend: string; publicKey: string }
+    const { keyId, publicKey } = agentKeyCheckpoint.details as {
+      keyId: string
+      backend: string
+      publicKey: string
+    }
     p.note(
       [`ID:         ${keyId}`, `Public key: ${publicKey}`].join('\n'),
       agentKeyCheckpoint.status === 'created' ? 'Agent key created' : 'Agent key ready',
@@ -271,7 +315,10 @@ export const configureCommand = Cli.create('configure', {
     )
 
     const result = {
-      account: { address: accountResult.address, chainId: accountResult.chainId ?? config.porto?.chainIds?.[0] },
+      account: {
+        address: accountResult.address,
+        chainId: accountResult.chainId ?? config.porto?.chainIds?.[0],
+      },
       checkpoints: [agentKeyCheckpoint, accountResult.checkpoint],
       command: 'configure' as const,
       poweredBy: 'Porto',

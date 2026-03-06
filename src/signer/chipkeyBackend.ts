@@ -67,7 +67,10 @@ export class ChipkeyBackend implements SignerBackend {
 
     const publicKey = normalizeHex(String(response.publicKey ?? '')) as `0x${string}`
     if (!/^0x[0-9a-f]+$/i.test(publicKey)) {
-      throw new AppError('SIGNER_BACKEND_INVALID_RESPONSE', 'chipkey returned an invalid public key.')
+      throw new AppError(
+        'SIGNER_BACKEND_INVALID_RESPONSE',
+        'chipkey returned an invalid public key.',
+      )
     }
 
     return { publicKey }
@@ -78,7 +81,10 @@ export class ChipkeyBackend implements SignerBackend {
     const publicKey = normalizeHex(String(response.publicKey ?? '')) as `0x${string}`
 
     if (!/^0x[0-9a-f]+$/i.test(publicKey)) {
-      throw new AppError('SIGNER_BACKEND_INVALID_RESPONSE', 'chipkey returned an invalid public key.')
+      throw new AppError(
+        'SIGNER_BACKEND_INVALID_RESPONSE',
+        'chipkey returned an invalid public key.',
+      )
     }
 
     return publicKey

@@ -24,13 +24,17 @@ openawa/
 ```
 
 ## docs
+
 Specs and decisions.
 
 ## src
+
 TypeScript CLI implementation for signer + Porto adapter.
 
 ## test/e2e
+
 Live-network oriented CLI-level tests (guarded by env flag).
 
 ## skills/porto-wallet
+
 ClawHub skill folder (publish this directory).

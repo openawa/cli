@@ -1,7 +1,7 @@
 import { Chains, Mode, Porto } from 'porto'
 import * as RelayActions from 'porto/viem/RelayActions'
 import * as WalletActions from 'porto/viem/WalletActions'
-import { createClient, createPublicClient, formatEther, http, parseEther, type Chain } from 'viem'
+import { createClient, createPublicClient, formatEther, http, type Chain } from 'viem'
 import { getCallsStatus } from 'viem/actions'
 import * as WalletClient from 'porto/viem/WalletClient'
 
@@ -17,8 +17,8 @@ import type { SignerService } from '../signer/service.js'
 const DEFAULT_GRANT_ANY_TARGET = '0x3232323232323232323232323232323232323232' as `0x${string}`
 const DEFAULT_GRANT_ANY_SELECTOR = '0x32323232' as `0x${string}`
 // Per-period fee cap (human-readable decimal string; Porto maps this to the minimum spend period)
-const DEFAULT_GRANT_FEE_LIMIT_EXP    = '25'   as `${number}`  // 25 EXP/period on Base Sepolia
-const DEFAULT_GRANT_FEE_LIMIT_NATIVE = '0.01' as `${number}`  // 0.01 ETH/period on mainnet
+const DEFAULT_GRANT_FEE_LIMIT_EXP = '25' as `${number}` // 25 EXP/period on Base Sepolia
+const DEFAULT_GRANT_FEE_LIMIT_NATIVE = '0.01' as `${number}` // 0.01 ETH/period on mainnet
 
 export type SpendPeriod = 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year'
 
@@ -150,7 +150,9 @@ function extractAddressesFromTokenArray(value: unknown): `0x${string}`[] {
 export function getChainByIdOrName(idOrName: string | number): Chain | undefined {
   const asId = typeof idOrName === 'number' ? idOrName : parseInt(idOrName, 10)
   if (!isNaN(asId)) return Chains.all.find((c) => c.id === asId)
-  const key = String(idOrName).toLowerCase().replace(/[\s-]+/g, '')
+  const key = String(idOrName)
+    .toLowerCase()
+    .replace(/[\s-]+/g, '')
   return Chains.all.find((c) => c.name.toLowerCase().replace(/[\s-]+/g, '') === key)
 }
 
@@ -167,11 +169,19 @@ export function resolveCommandChain(config: AgentWalletConfig, chainFlag?: strin
   if (chainFlag) {
     const chain = getChainByIdOrName(chainFlag)
     if (!chain) {
-      throw new AppError('INVALID_CHAIN', `Unknown chain: "${chainFlag}". Use a chain name (e.g. base-sepolia) or numeric chain ID.`)
+      throw new AppError(
+        'INVALID_CHAIN',
+        `Unknown chain: "${chainFlag}". Use a chain name (e.g. base-sepolia) or numeric chain ID.`,
+      )
     }
     if (chainIds.length > 0 && !chainIds.includes(chain.id)) {
-      const knownNames = chainIds
-        .map((id) => Chains.all.find((c) => c.id === id)?.name.toLowerCase().replace(/[\s-]+/g, '-') ?? String(id))
+      const knownNames = chainIds.map(
+        (id) =>
+          Chains.all
+            .find((c) => c.id === id)
+            ?.name.toLowerCase()
+            .replace(/[\s-]+/g, '-') ?? String(id),
+      )
       throw new AppError(
         'CHAIN_NOT_CONFIGURED',
         `Chain "${chainFlag}" is not configured. Run \`openawa configure --chain ${chainFlag}\` first.\nConfigured: ${knownNames.join(', ')}`,
@@ -181,20 +191,30 @@ export function resolveCommandChain(config: AgentWalletConfig, chainFlag?: strin
   }
 
   if (chainIds.length === 0) {
-    throw new AppError('MISSING_CHAIN_ID', 'No chain configured. Run `openawa configure --chain <name>` first.')
+    throw new AppError(
+      'MISSING_CHAIN_ID',
+      'No chain configured. Run `openawa configure --chain <name>` first.',
+    )
   }
 
   if (chainIds.length === 1) {
     const chain = Chains.all.find((c) => c.id === chainIds[0])
     if (!chain) {
-      throw new AppError('MISSING_CHAIN_ID', `Configured chain ID ${String(chainIds[0])} is not a supported Porto chain.`)
+      throw new AppError(
+        'MISSING_CHAIN_ID',
+        `Configured chain ID ${String(chainIds[0])} is not a supported Porto chain.`,
+      )
     }
     return chain
   }
 
   // Multiple chains configured, no flag
   const names = chainIds.map(
-    (id) => Chains.all.find((c) => c.id === id)?.name.toLowerCase().replace(/\s+/g, '-') ?? String(id),
+    (id) =>
+      Chains.all
+        .find((c) => c.id === id)
+        ?.name.toLowerCase()
+        .replace(/\s+/g, '-') ?? String(id),
   )
   throw new AppError(
     'AMBIGUOUS_CHAIN',
@@ -202,7 +222,10 @@ export function resolveCommandChain(config: AgentWalletConfig, chainFlag?: strin
   )
 }
 
-function resolveConfiguredChain(config: AgentWalletConfig, overrideChainId?: number): Chain | undefined {
+function resolveConfiguredChain(
+  config: AgentWalletConfig,
+  overrideChainId?: number,
+): Chain | undefined {
   const chainId = overrideChainId ?? config.porto?.chainIds?.[0]
   if (!chainId) return undefined
   return Chains.all.find((c) => c.id === chainId)
@@ -240,10 +263,7 @@ function errorMetadata(error: unknown) {
   }
 
   const candidate = error as Record<string, unknown>
-  const message =
-    typeof candidate.message === 'string'
-      ? candidate.message
-      : String(error)
+  const message = typeof candidate.message === 'string' ? candidate.message : String(error)
 
   return {
     code:
@@ -271,7 +291,8 @@ function isRelayKeyRecord(value: unknown): value is RelayKeyRecord {
   }
   if (typeof value.publicKey !== 'string' || !value.publicKey.startsWith('0x')) return false
   if (value.role !== 'admin' && value.role !== 'normal') return false
-  if (value.type !== 'p256' && value.type !== 'secp256k1' && value.type !== 'webauthnp256') return false
+  if (value.type !== 'p256' && value.type !== 'secp256k1' && value.type !== 'webauthnp256')
+    return false
   if (!Array.isArray(value.permissions)) return false
   return true
 }
@@ -335,7 +356,8 @@ async function requestRelay<T>(method: string, params: unknown[]): Promise<T> {
   } catch (error) {
     const metadata = errorMetadata(error)
     const message = metadata.message.toLowerCase()
-    const timedOut = message.includes('timed out') || message.includes('timeout') || message.includes('aborted')
+    const timedOut =
+      message.includes('timed out') || message.includes('timeout') || message.includes('aborted')
     throw new AppError(
       timedOut ? 'RELAY_REQUEST_TIMEOUT' : 'RELAY_HTTP_ERROR',
       timedOut ? 'Relay request timed out.' : 'Relay request failed.',
@@ -432,11 +454,9 @@ function sleep(ms: number) {
  * When chainId is provided and no entries match that chain, returns undefined — permissions
  * are chain-scoped.
  */
-function findGrantedPermission<T extends { chainId?: number; expiry: number; key: { publicKey: string } }>(
-  permissions: readonly T[] | undefined,
-  publicKey: string,
-  chainId?: number,
-): T | undefined {
+function findGrantedPermission<
+  T extends { chainId?: number; expiry: number; key: { publicKey: string } },
+>(permissions: readonly T[] | undefined, publicKey: string, chainId?: number): T | undefined {
   let matching = (permissions ?? []).filter(
     (p) => p.key.publicKey.toLowerCase() === publicKey.toLowerCase(),
   )
@@ -581,12 +601,19 @@ export class PortoService {
   private appendPrecallPermission(
     address: `0x${string}`,
     chainId: number,
-    granted: { id: `0x${string}`; expiry: number; key: { publicKey: `0x${string}`; type: string }; permissions?: unknown },
+    granted: {
+      id: `0x${string}`
+      expiry: number
+      key: { publicKey: `0x${string}`; type: string }
+      permissions?: unknown
+    },
   ) {
-    const raw = granted.permissions as {
-      calls?: { to?: `0x${string}`; signature?: string }[]
-      spend?: { limit: bigint | string; period: string; token?: `0x${string}` | null }[]
-    } | undefined
+    const raw = granted.permissions as
+      | {
+          calls?: { to?: `0x${string}`; signature?: string }[]
+          spend?: { limit: bigint | string; period: string; token?: `0x${string}` | null }[]
+        }
+      | undefined
 
     const precall: PrecallPermission = {
       address,
@@ -596,7 +623,11 @@ export class PortoService {
       key: granted.key,
       permissions: {
         calls: raw?.calls ?? [],
-        spend: (raw?.spend ?? []).map((s) => ({ limit: String(s.limit), period: s.period, token: s.token ?? null })),
+        spend: (raw?.spend ?? []).map((s) => ({
+          limit: String(s.limit),
+          period: s.period,
+          token: s.token ?? null,
+        })),
       },
     }
 
@@ -606,14 +637,14 @@ export class PortoService {
     }
   }
 
-  private async buildGrantPermissionsParam(
-    chain: Chain,
-    policy: PermissionPolicy,
-  ) {
+  private async buildGrantPermissionsParam(chain: Chain, policy: PermissionPolicy) {
     const key = await this.signer.getPortoKey()
     const feeTokenSymbol = chain.id === Chains.baseSepolia.id ? 'EXP' : 'native'
-    const feeLimit = policy.feeLimit
-      ?? (chain.id === Chains.baseSepolia.id ? DEFAULT_GRANT_FEE_LIMIT_EXP : DEFAULT_GRANT_FEE_LIMIT_NATIVE)
+    const feeLimit =
+      policy.feeLimit ??
+      (chain.id === Chains.baseSepolia.id
+        ? DEFAULT_GRANT_FEE_LIMIT_EXP
+        : DEFAULT_GRANT_FEE_LIMIT_NATIVE)
     const calls = policy.calls
       ? policy.calls
       : [{ to: DEFAULT_GRANT_ANY_TARGET, signature: DEFAULT_GRANT_ANY_SELECTOR }]
@@ -623,7 +654,13 @@ export class PortoService {
       key,
       permissions: {
         calls,
-        spend: [{ limit: policy.spendLimitWei, period: policy.spendPeriod, ...(policy.spendToken ? { token: policy.spendToken } : {}) }],
+        spend: [
+          {
+            limit: policy.spendLimitWei,
+            period: policy.spendPeriod,
+            ...(policy.spendToken ? { token: policy.spendToken } : {}),
+          },
+        ],
       },
     }
   }
@@ -635,12 +672,18 @@ export class PortoService {
   }): Promise<AgentPermissionSnapshot[]> {
     const address = options.address ?? this.config.porto?.address
     if (!address) {
-      throw new AppError('MISSING_ACCOUNT_ADDRESS', 'No account address configured. Run `openawa configure` first.')
+      throw new AppError(
+        'MISSING_ACCOUNT_ADDRESS',
+        'No account address configured. Run `openawa configure` first.',
+      )
     }
 
     const chain = resolveConfiguredChain(this.config, options.chainId)
     if (!chain) {
-      throw new AppError('MISSING_CHAIN_ID', 'No chain configured. Re-run configure with an explicit network.')
+      throw new AppError(
+        'MISSING_CHAIN_ID',
+        'No chain configured. Re-run configure with an explicit network.',
+      )
     }
 
     const agentKey = await this.signer.getPortoKey()
@@ -660,7 +703,9 @@ export class PortoService {
       .filter((candidate) => candidate.role === 'normal')
       .filter((candidate) => normalizeRelayKeyType(candidate.type) === agentKey.type)
       .filter((candidate) => candidate.publicKey.toLowerCase() === agentKey.publicKey.toLowerCase())
-      .filter((candidate) => (options.includeExpired ? true : parseRelayExpiry(candidate.expiry) > nowSeconds))
+      .filter((candidate) =>
+        options.includeExpired ? true : parseRelayExpiry(candidate.expiry) > nowSeconds,
+      )
       .map((candidate) => {
         const calls = candidate.permissions
           .filter((permission): permission is RelayPermissionCall => permission.type === 'call')
@@ -711,7 +756,8 @@ export class PortoService {
         calls.some(
           (c) =>
             c.to?.toLowerCase() === desired.to.toLowerCase() &&
-            (desired.signature === undefined || c.signature?.toLowerCase() === desired.signature.toLowerCase()),
+            (desired.signature === undefined ||
+              c.signature?.toLowerCase() === desired.signature.toLowerCase()),
         ),
       )
     }
@@ -719,14 +765,19 @@ export class PortoService {
     const isNativeToken = (token: `0x${string}` | null | undefined) =>
       token == null || token === NATIVE_TOKEN_ADDRESS
 
-    const spendMatch = (spend: { limit: bigint | string; period: string; token?: `0x${string}` | null }[]) =>
+    const spendMatch = (
+      spend: { limit: bigint | string; period: string; token?: `0x${string}` | null }[],
+    ) =>
       spend.some((s) => {
         if (s.period !== desiredSpendPeriod || BigInt(s.limit) !== desiredSpendLimit) return false
         if (desiredSpendToken === undefined) return isNativeToken(s.token)
         return s.token?.toLowerCase() === desiredSpendToken.toLowerCase()
       })
 
-    const onchain = await this.listAgentPermissions({ address: options.address, chainId: options.chainId })
+    const onchain = await this.listAgentPermissions({
+      address: options.address,
+      chainId: options.chainId,
+    })
     for (const p of onchain) {
       if (callsMatch(p.permissions.calls) && spendMatch(p.permissions.spend)) {
         return { id: p.id }
@@ -794,9 +845,7 @@ export class PortoService {
 
       const response = await WalletActions.connect(session.client, {
         chainIds: [chain.id],
-        ...(options.createAccount
-          ? { createAccount: true }
-          : { selectAccount: true }),
+        ...(options.createAccount ? { createAccount: true } : { selectAccount: true }),
         grantPermissions: grantPermissionsParam,
       })
 
@@ -805,11 +854,12 @@ export class PortoService {
         throw new AppError('ONBOARD_FAILED', 'Porto onboarding did not return an account address.')
       }
 
-      const grantedPermission = findGrantedPermission(
-        response.accounts[0]?.capabilities?.permissions,
-        grantPermissionsParam.key.publicKey,
-        chain.id,
-      ) ?? null
+      const grantedPermission =
+        findGrantedPermission(
+          response.accounts[0]?.capabilities?.permissions,
+          grantPermissionsParam.key.publicKey,
+          chain.id,
+        ) ?? null
 
       const addressChanged =
         this.config.porto?.address &&
@@ -897,7 +947,10 @@ export class PortoService {
   async fund(options: FundOptions) {
     const chain = resolveConfiguredChain(this.config, options.chainId)
     if (!chain) {
-      throw new AppError('MISSING_CHAIN_ID', 'No chain configured. Re-run configure with an explicit network.')
+      throw new AppError(
+        'MISSING_CHAIN_ID',
+        'No chain configured. Re-run configure with an explicit network.',
+      )
     }
 
     const session = await getWalletClient({
@@ -909,7 +962,10 @@ export class PortoService {
     try {
       const address = options.address ?? this.config.porto?.address
       if (!address) {
-        throw new AppError('MISSING_ACCOUNT_ADDRESS', 'No account address configured. Run `openawa configure` first.')
+        throw new AppError(
+          'MISSING_ACCOUNT_ADDRESS',
+          'No account address configured. Run `openawa configure` first.',
+        )
       }
 
       if (!options.skipConnect) {
@@ -927,14 +983,17 @@ export class PortoService {
 
       if (chain.id === Chains.baseSepolia.id && response.id === ZERO_TX_HASH) {
         try {
-          const fallback = await requestRelay<{ transactionHash: `0x${string}` }>('wallet_addFaucetFunds', [
-            {
-              address,
-              chainId: chain.id,
-              tokenAddress: BASE_SEPOLIA_EXP_TOKEN,
-              value: BASE_SEPOLIA_FAUCET_VALUE,
-            },
-          ])
+          const fallback = await requestRelay<{ transactionHash: `0x${string}` }>(
+            'wallet_addFaucetFunds',
+            [
+              {
+                address,
+                chainId: chain.id,
+                tokenAddress: BASE_SEPOLIA_EXP_TOKEN,
+                value: BASE_SEPOLIA_FAUCET_VALUE,
+              },
+            ],
+          )
           return { id: fallback.transactionHash, kind: 'faucet' }
         } catch (error) {
           const metadata = errorMetadata(error)
@@ -969,7 +1028,9 @@ export class PortoService {
     }
   }
 
-  async *send(options: SendOptions): AsyncGenerator<
+  async *send(
+    options: SendOptions,
+  ): AsyncGenerator<
     { stage: 'prepare_calls' | 'sign_digest' | 'send_prepared' | 'await_settlement' },
     { txHash: string | null; bundleId: string; status: string },
     unknown
@@ -983,7 +1044,8 @@ export class PortoService {
       mode: 'relay',
     })
 
-    let stage: 'prepare_calls' | 'sign_digest' | 'send_prepared' | 'await_settlement' = 'prepare_calls'
+    let stage: 'prepare_calls' | 'sign_digest' | 'send_prepared' | 'await_settlement' =
+      'prepare_calls'
 
     try {
       const key = await this.signer.getPortoKey()
@@ -1023,10 +1085,14 @@ export class PortoService {
         signatureResult = await this.signer.sign(prepared.digest, 'hex', 'none')
       } catch (error) {
         const metadata = errorMetadata(error)
-        throw new AppError('PORTO_SEND_SIGN_FAILED', 'Local signer failed to sign prepared digest.', {
-          ...metadata,
-          stage,
-        })
+        throw new AppError(
+          'PORTO_SEND_SIGN_FAILED',
+          'Local signer failed to sign prepared digest.',
+          {
+            ...metadata,
+            stage,
+          },
+        )
       }
 
       let response: Awaited<ReturnType<typeof WalletActions.sendPreparedCalls>>
@@ -1110,9 +1176,10 @@ export class PortoService {
     chainId: number,
   ): Promise<`0x${string}`[]> {
     const capabilities = await RelayActions.getCapabilities(relayClient, { chainId })
-    const addresses = isObject(capabilities) && isObject(capabilities.fees)
-      ? extractAddressesFromTokenArray(capabilities.fees.tokens)
-      : []
+    const addresses =
+      isObject(capabilities) && isObject(capabilities.fees)
+        ? extractAddressesFromTokenArray(capabilities.fees.tokens)
+        : []
 
     if (addresses.length === 0) {
       throw new AppError(
@@ -1124,15 +1191,24 @@ export class PortoService {
     return addresses
   }
 
-  async hasFundsInSupportedFeeTokens(options: { address?: `0x${string}`; chainId?: number }): Promise<boolean> {
+  async hasFundsInSupportedFeeTokens(options: {
+    address?: `0x${string}`
+    chainId?: number
+  }): Promise<boolean> {
     const address = options.address ?? this.config.porto?.address
     if (!address) {
-      throw new AppError('MISSING_ACCOUNT_ADDRESS', 'No account address configured. Run `openawa configure` first.')
+      throw new AppError(
+        'MISSING_ACCOUNT_ADDRESS',
+        'No account address configured. Run `openawa configure` first.',
+      )
     }
 
     const chain = resolveConfiguredChain(this.config, options.chainId)
     if (!chain) {
-      throw new AppError('MISSING_CHAIN_ID', 'No chain configured. Re-run configure with an explicit network.')
+      throw new AppError(
+        'MISSING_CHAIN_ID',
+        'No chain configured. Re-run configure with an explicit network.',
+      )
     }
 
     const relayClient = getRelayClient(chain)
@@ -1147,9 +1223,13 @@ export class PortoService {
 
     const chainAssets = assets[chain.id]
     if (!chainAssets) {
-      throw new AppError('RELAY_INVALID_RESPONSE', 'Porto assets response is missing the selected chain.', {
-        chainId: chain.id,
-      })
+      throw new AppError(
+        'RELAY_INVALID_RESPONSE',
+        'Porto assets response is missing the selected chain.',
+        {
+          chainId: chain.id,
+        },
+      )
     }
 
     return chainAssets.some((asset) => {
@@ -1163,19 +1243,29 @@ export class PortoService {
   async balance(options: { address?: `0x${string}`; chainId?: number }) {
     const address = options.address ?? this.config.porto?.address
     if (!address) {
-      throw new AppError('MISSING_ACCOUNT_ADDRESS', 'No account address configured. Run `openawa configure` first.')
+      throw new AppError(
+        'MISSING_ACCOUNT_ADDRESS',
+        'No account address configured. Run `openawa configure` first.',
+      )
     }
 
     const chain = resolveConfiguredChain(this.config, options.chainId)
     if (!chain) {
-      throw new AppError('MISSING_CHAIN_ID', 'No chain configured. Re-run configure with an explicit network.')
+      throw new AppError(
+        'MISSING_CHAIN_ID',
+        'No chain configured. Re-run configure with an explicit network.',
+      )
     }
 
     const rpcUrl = chain.rpcUrls.default.http[0]
     if (!rpcUrl) {
-      throw new AppError('MISSING_RPC_URL', 'No default RPC URL is configured for the selected chain.', {
-        chainId: chain.id,
-      })
+      throw new AppError(
+        'MISSING_RPC_URL',
+        'No default RPC URL is configured for the selected chain.',
+        {
+          chainId: chain.id,
+        },
+      )
     }
 
     const publicClient = createPublicClient({
@@ -1198,19 +1288,29 @@ export class PortoService {
   async deployment(options: { address?: `0x${string}`; chainId?: number }) {
     const address = options.address ?? this.config.porto?.address
     if (!address) {
-      throw new AppError('MISSING_ACCOUNT_ADDRESS', 'No account address configured. Run `openawa configure` first.')
+      throw new AppError(
+        'MISSING_ACCOUNT_ADDRESS',
+        'No account address configured. Run `openawa configure` first.',
+      )
     }
 
     const chain = resolveConfiguredChain(this.config, options.chainId)
     if (!chain) {
-      throw new AppError('MISSING_CHAIN_ID', 'No chain configured. Re-run configure with an explicit network.')
+      throw new AppError(
+        'MISSING_CHAIN_ID',
+        'No chain configured. Re-run configure with an explicit network.',
+      )
     }
 
     const rpcUrl = chain.rpcUrls.default.http[0]
     if (!rpcUrl) {
-      throw new AppError('MISSING_RPC_URL', 'No default RPC URL is configured for the selected chain.', {
-        chainId: chain.id,
-      })
+      throw new AppError(
+        'MISSING_RPC_URL',
+        'No default RPC URL is configured for the selected chain.',
+        {
+          chainId: chain.id,
+        },
+      )
     }
 
     const publicClient = createPublicClient({

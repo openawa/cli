@@ -9,12 +9,10 @@ import type { InitKeyOptions, SignHashMode } from './types.js'
 export type PublicKeyFormat = 'raw' | 'hex' | 'jwk' | 'spki'
 export type PayloadFormat = 'hex' | 'base64' | 'raw'
 
-const P256_SPKI_PREFIX =
-  '3059301306072a8648ce3d020106082a8648ce3d030107034200'
+const P256_SPKI_PREFIX = '3059301306072a8648ce3d020106082a8648ce3d030107034200'
 
 const KEY_NOT_INITIALIZED_MESSAGE =
   'Signer key has not been initialized. Run `openawa configure` first.'
-
 
 function decodePayload(payload: string, format: PayloadFormat): Uint8Array {
   if (format === 'raw') return Buffer.from(payload, 'utf8')

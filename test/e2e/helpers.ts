@@ -61,10 +61,7 @@ const BASE_SEPOLIA_FAUCET_VALUE = '0x340aad21b3b700000'
 const PROCESS_TIMEOUT_MS = 3 * 60 * 1_000
 const DEBUG = process.env.AGENT_WALLET_E2E_DEBUG === '1'
 const BROWSER_HEADLESS =
-  process.env.AGENT_WALLET_E2E_HEADLESS === '0' ||
-  process.env.AGENT_WALLET_E2E_HEADLESS === 'false'
-    ? false
-    : true
+  process.env.AGENT_WALLET_E2E_HEADLESS !== '0' && process.env.AGENT_WALLET_E2E_HEADLESS !== 'false'
 
 export async function makeIsolatedEnv(): Promise<IsolatedEnv> {
   const configHome = await mkdtemp(path.join(os.tmpdir(), 'openawa-e2e-'))
@@ -92,7 +89,9 @@ export async function runCli(
     timeout: timeoutMs,
   })
 
-  const timeoutNote = result.timedOut ? `\n[e2e][runCli] timed out after ${String(timeoutMs)}ms` : ''
+  const timeoutNote = result.timedOut
+    ? `\n[e2e][runCli] timed out after ${String(timeoutMs)}ms`
+    : ''
   const stderr = `${result.stderr}${timeoutNote}`
 
   if (DEBUG) {
@@ -149,7 +148,9 @@ export function spawnCli(args: string[], env: NodeJS.ProcessEnv): CliHandle {
     for (let i = pendingMatchers.length - 1; i >= 0; i--) {
       const matcher = pendingMatchers[i]!
       const matched =
-        typeof matcher.pattern === 'string' ? line.includes(matcher.pattern) : matcher.pattern.test(line)
+        typeof matcher.pattern === 'string'
+          ? line.includes(matcher.pattern)
+          : matcher.pattern.test(line)
       if (matched) {
         clearTimeout(matcher.timeoutId)
         pendingMatchers.splice(i, 1)
@@ -185,7 +186,7 @@ export function spawnCli(args: string[], env: NodeJS.ProcessEnv): CliHandle {
   child.once('exit', (code) => {
     cliExited = true
     cliExitCode = code ?? 1
-    for (const matcher of [...pendingMatchers]) {
+    for (const matcher of pendingMatchers) {
       clearTimeout(matcher.timeoutId)
       matcher.reject(new Error(`CLI exited before pattern matched: ${String(matcher.pattern)}`))
     }
@@ -196,20 +197,23 @@ export function spawnCli(args: string[], env: NodeJS.ProcessEnv): CliHandle {
     waitFor(pattern: string | RegExp, timeoutMs = 30_000): Promise<string> {
       // Check lines already seen before this call
       for (const line of bufferedLines) {
-        const matched =
-          typeof pattern === 'string' ? line.includes(pattern) : pattern.test(line)
+        const matched = typeof pattern === 'string' ? line.includes(pattern) : pattern.test(line)
         if (matched) return Promise.resolve(line)
       }
 
       if (cliExited) {
-        return Promise.reject(new Error(`CLI already exited; pattern not found: ${String(pattern)}`))
+        return Promise.reject(
+          new Error(`CLI already exited; pattern not found: ${String(pattern)}`),
+        )
       }
 
       return new Promise<string>((resolve, reject) => {
         const timeoutId = setTimeout(() => {
           const idx = pendingMatchers.findIndex((m) => m.timeoutId === timeoutId)
           if (idx !== -1) pendingMatchers.splice(idx, 1)
-          reject(new Error(`Timed out after ${String(timeoutMs)}ms waiting for: ${String(pattern)}`))
+          reject(
+            new Error(`Timed out after ${String(timeoutMs)}ms waiting for: ${String(pattern)}`),
+          )
         }, timeoutMs)
         pendingMatchers.push({ pattern, resolve, reject, timeoutId })
       })
@@ -218,9 +222,10 @@ export function spawnCli(args: string[], env: NodeJS.ProcessEnv): CliHandle {
     async done(): Promise<CliRunResult> {
       // If the child has already exited (tracked by our own exit handler), use
       // the recorded code directly rather than waiting for an event that already fired.
-      const exitCode = cliExited && cliExitCode !== null
-        ? cliExitCode
-        : await waitForProcessExit(child, PROCESS_TIMEOUT_MS)
+      const exitCode =
+        cliExited && cliExitCode !== null
+          ? cliExitCode
+          : await waitForProcessExit(child, PROCESS_TIMEOUT_MS)
 
       if (stdoutBuffer.length > 0) {
         onLine(stdoutBuffer)
@@ -265,7 +270,10 @@ export function spawnCliInteractive(args: string[], env: NodeJS.ProcessEnv): Int
   const checkMatchers = (line: string) => {
     for (let i = pendingMatchers.length - 1; i >= 0; i--) {
       const matcher = pendingMatchers[i]!
-      const matched = typeof matcher.pattern === 'string' ? line.includes(matcher.pattern) : matcher.pattern.test(line)
+      const matched =
+        typeof matcher.pattern === 'string'
+          ? line.includes(matcher.pattern)
+          : matcher.pattern.test(line)
       if (matched) {
         clearTimeout(matcher.timeoutId)
         pendingMatchers.splice(i, 1)
@@ -299,7 +307,7 @@ export function spawnCliInteractive(args: string[], env: NodeJS.ProcessEnv): Int
       onLine(lineBuffer.trim())
       lineBuffer = ''
     }
-    for (const matcher of [...pendingMatchers]) {
+    for (const matcher of pendingMatchers) {
       clearTimeout(matcher.timeoutId)
       matcher.reject(new Error(`CLI exited before pattern matched: ${String(matcher.pattern)}`))
     }
@@ -313,13 +321,17 @@ export function spawnCliInteractive(args: string[], env: NodeJS.ProcessEnv): Int
         if (matched) return Promise.resolve(line)
       }
       if (cliExited) {
-        return Promise.reject(new Error(`CLI already exited; pattern not found: ${String(pattern)}`))
+        return Promise.reject(
+          new Error(`CLI already exited; pattern not found: ${String(pattern)}`),
+        )
       }
       return new Promise<string>((resolve, reject) => {
         const timeoutId = setTimeout(() => {
           const idx = pendingMatchers.findIndex((m) => m.timeoutId === timeoutId)
           if (idx !== -1) pendingMatchers.splice(idx, 1)
-          reject(new Error(`Timed out after ${String(timeoutMs)}ms waiting for: ${String(pattern)}`))
+          reject(
+            new Error(`Timed out after ${String(timeoutMs)}ms waiting for: ${String(pattern)}`),
+          )
         }, timeoutMs)
         pendingMatchers.push({ pattern, resolve, reject, timeoutId })
       })
@@ -419,16 +431,17 @@ export function extractDialogUrl(line: string): string | null {
 }
 
 export function buildConfigureArgs(parameters: {
-  calls?: string[]         // address[:signature] entries
-  chain: string            // chain name or id (e.g. 'base-sepolia')
+  calls?: string[] // address[:signature] entries
+  chain: string // chain name or id (e.g. 'base-sepolia')
   createAccount?: boolean
   dialogHost?: string
   expiry?: string
-  json?: boolean           // pass --json flag (default: false, uses TOON)
+  json?: boolean // pass --json flag (default: false, uses TOON)
   spendLimit?: string
   spendPeriod?: string
 }): string[] {
-  const { calls, chain, createAccount, dialogHost, expiry, json, spendLimit, spendPeriod } = parameters
+  const { calls, chain, createAccount, dialogHost, expiry, json, spendLimit, spendPeriod } =
+    parameters
 
   const args = ['configure', '--chain', chain]
 
@@ -478,7 +491,9 @@ export async function ensureAccountFunding(parameters: {
   )
 
   if (payload.error) {
-    throw new Error(`Failed to faucet-fund e2e account: ${payload.error.message ?? 'unknown relay error'}`)
+    throw new Error(
+      `Failed to faucet-fund e2e account: ${payload.error.message ?? 'unknown relay error'}`,
+    )
   }
 
   const faucetTxHash = payload.result?.transactionHash
@@ -493,7 +508,9 @@ export async function ensureAccountFunding(parameters: {
 
   const startedAt = Date.now()
   while (Date.now() - startedAt < 30_000) {
-    const receipt = await publicClient.getTransactionReceipt({ hash: faucetTxHash }).catch(() => null)
+    const receipt = await publicClient
+      .getTransactionReceipt({ hash: faucetTxHash })
+      .catch(() => null)
     if (receipt?.blockNumber) {
       const latest = await publicClient.getBlockNumber()
       if (latest - receipt.blockNumber + 1n >= 1n) return
@@ -549,7 +566,9 @@ function parseJsonPayload(output: string): Record<string, unknown> | unknown[] |
       for (let j = lines.length - 1; j > i; j--) {
         if (lines[j]!.trim() === closer) {
           try {
-            return JSON.parse(lines.slice(i, j + 1).join('\n')) as Record<string, unknown> | unknown[]
+            return JSON.parse(lines.slice(i, j + 1).join('\n')) as
+              | Record<string, unknown>
+              | unknown[]
           } catch {
             continue
           }
