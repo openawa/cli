@@ -62,6 +62,8 @@ Latest validation on this machine (2026-03-06):
 - Switched the chipkey npm dependency/import from `@jeanregisser/chipkey` to `@chipkey/cli`.
 - Switched the repo package manager from npm to pnpm and replaced `package-lock.json` with `pnpm-lock.yaml`.
 - Upgraded `incur` from `0.1.17` to `0.2.2` and revalidated `typecheck`, `test`, and `test:e2e`.
+- Aligned caret lower bounds in `package.json` to the current resolved versions for direct deps, except `@types/node`.
+- Switched `porto` from an exact version spec to a caret range for consistency with the direct dependency policy.
 - Reduced the README local key management section to a single linked sentence pointing at `chipkey` and `@chipkey/cli`.
 
 ## Done (2026-03-03)
