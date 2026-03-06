@@ -1,4 +1,4 @@
-import chipkey from '@jeanregisser/chipkey'
+import chipkey from '@chipkey/cli'
 import { bytesToHex, hexToBytes, normalizeHex } from '../lib/encoding.js'
 import { AppError } from '../lib/errors.js'
 import { runCommand } from '../lib/exec.js'

@@ -6,9 +6,11 @@
 - Canonical spec: `/Users/jean/src/github.com/jeanregisser/agent-wallet/docs/cli-spec.md`
 - Workflow policy: `/Users/jean/src/github.com/jeanregisser/agent-wallet/AGENTS.md`
 
-Latest validation on this machine (2026-03-02):
+Latest validation on this machine (2026-03-06):
+- `npm install --legacy-peer-deps` -> pass
 - `npm run typecheck` -> pass
 - `npm run build` -> pass
+- `npm run test` -> pass (`23 passed / 0 failed`)
 - `CHIPKEY_BINARY=... AGENT_WALLET_E2E_DEBUG=1 npx vitest run --project e2e test/e2e/flow.e2e.ts` -> pass (`1 passed / 0 failed`, ~21s)
 
 ## Key Insights (Precall Model)
@@ -55,6 +57,11 @@ Latest validation on this machine (2026-03-02):
 ## Done (2026-03-05)
 - Updated configure funding detection to check balances across all Porto-supported fee tokens for the selected chain (native + ERC-20 fee tokens).
 - Switched fee-token discovery to Porto SDK `RelayActions.getCapabilities` and removed silent fallback/error-swallowing from configure funding detection.
+
+## Done (2026-03-06)
+- Switched the chipkey npm dependency/import from `@jeanregisser/chipkey` to `@chipkey/cli`.
+- Refreshed `package-lock.json` against published `@chipkey/cli@0.5.1`.
+- Reduced the README local key management section to a single linked sentence pointing at `chipkey` and `@chipkey/cli`.
 
 ## Done (2026-03-03)
 - Added colocated unit tests for `getChainByIdOrName` and `resolveCommandChain` (`src/porto/service.test.ts`, 20 tests).

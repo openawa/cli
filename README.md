@@ -146,11 +146,7 @@ Background:
 
 ## Local Key Management Stack
 
-OpenAwa's local signer backend uses:
-- [`chipkey`](https://github.com/jeanregisser/chipkey): hardware-backed key management CLI using Secure Enclave on macOS and TPM 2.0 on Linux/Windows.
-- [`sks` (Secure Key Store)](https://github.com/facebookincubator/sks): the underlying cross-platform key-store abstraction used by chipkey.
-
-If you want deeper implementation details around local key storage and signing behavior, the chipkey repository is the best reference.
+OpenAwa uses the local [`chipkey`](https://github.com/jeanregisser/chipkey) CLI (npm package: [`@chipkey/cli`](https://www.npmjs.com/package/@chipkey/cli)) for hardware-backed key creation and signing.
 
 ## Agent Integrations (Incur)
 

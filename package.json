@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.0.1",
-    "@jeanregisser/chipkey": "^0.4.0",
+    "@chipkey/cli": "^0.5.1",
     "incur": "^0.1.15",
     "porto": "0.2.37",
     "viem": "^2.37.13"
