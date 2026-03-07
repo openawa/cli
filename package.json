@@ -2,6 +2,14 @@
   "name": "@openawa/cli",
   "version": "0.0.0-semantic-release",
   "private": false,
+  "homepage": "https://github.com/openawa/openawa",
+  "bugs": {
+    "url": "https://github.com/openawa/openawa/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openawa/openawa"
+  },
   "bin": {
     "openawa": "dist/cli.js"
   },

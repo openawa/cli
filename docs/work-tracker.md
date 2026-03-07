@@ -65,6 +65,7 @@ Latest validation on this machine (2026-03-06):
 
 ## Done (Recent)
 
+- Fixed npm provenance publishing by adding canonical GitHub repository metadata to `package.json`.
 - Added tag-driven npm release automation with `release-it`, keeping version bumps out of committed source and documenting a manual bootstrap-tag path.
 - Declared Node.js 22 as the minimum supported runtime in `package.json` and switched CI `setup-node` to read the version from `package.json`.
 - Added Husky and lint-staged pre-commit hooks so staged JS/TS files are auto-fixed with Oxlint and formatted with Oxfmt before commit.
