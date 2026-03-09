@@ -2,7 +2,9 @@
 
 openawa is a security-first wallet CLI for autonomous agents.
 
-Tagline: "Your agent's wallet. Your hardware. Your keys."
+> Your agent's wallet. Your hardware. Your keys.
+
+[Why openawa](#why-openawa) · [Quick Prompt](#quick-prompt) · [Install](#install) · [Usage](#usage) · [Security Model](#security-model) · [Powered by Porto](#powered-by-porto)
 
 It gives an agent a hardware-backed signing key with operator-controlled, onchain-enforced policy boundaries:
 
@@ -16,9 +18,9 @@ openawa is powered by [Porto](https://porto.sh) for account and relay workflows,
 
 Core positioning:
 
-- Local signing on operator-owned hardware instead of provider-managed signing.
-- Policy-bound autonomy with onchain enforcement of spend limits, call scope, and expiry.
-- Open, inspectable CLI workflow and open-source infrastructure instead of a closed hosted black box.
+- **Local signing** on operator-owned hardware instead of provider-managed signing.
+- **Policy-bound autonomy** with onchain enforcement of spend limits, call scope, and expiry.
+- **Open workflow** with inspectable CLI flows and open-source infrastructure instead of a closed hosted black box.
 
 ## Alpha Status
 
@@ -41,49 +43,61 @@ Compared with cloud-key agent wallet products like [Coinbase Agentic Wallet](htt
 
 This is a different trust model than hosted-key or hosted-TEE stacks: openawa keeps the signing primitive on operator-owned hardware and uses onchain permissions for runtime boundaries.
 
-## Quick Start
+## Quick Prompt
 
-Install from npm:
+Prompt your agent:
+
+**Skills (recommended)**
+
+```txt
+Run `npx @openawa/cli skills add`, then help me configure an agent wallet on Base Sepolia.
+```
+
+**MCP**
+
+```txt
+Run `npx @openawa/cli mcp add`, then help me inspect my openawa account status and permissions.
+```
+
+## Install
 
 ```bash
 npm install -g @openawa/cli
+```
+
+```bash
+pnpm add -g @openawa/cli
+```
+
+```bash
+bun add -g @openawa/cli
+```
+
+```bash
 openawa --help
 ```
 
-Or run from source:
-
-```bash
-# Node.js 22+
-pnpm install
-pnpm check
-pnpm build
-```
-
-Run commands with:
-
-```bash
-node dist/cli.js <command> [options]
-```
+## Usage
 
 Minimal flow:
 
 ```bash
 # 1) Configure account + permissions
-node dist/cli.js configure --chain base-sepolia
+openawa configure --chain base-sepolia
 
 # 2) Inspect current state
-node dist/cli.js status --chain base-sepolia
+openawa status --chain base-sepolia
 
 # 3) Submit a call bundle
 # Replace the payload below with your own contract call.
-node dist/cli.js sign \
+openawa sign \
   --chain base-sepolia \
   --calls '[{"to":"0xabc...","data":"0x...","value":"0x0"}]'
 ```
 
 Three commands, three jobs:
 
-1. `configure` initializes or reuses the local key, connects the account, and grants permissions.
+1. `configure` is the human-run setup command: it initializes or reuses the local key, connects the account, and grants permissions.
 2. `sign` signs and submits prepared calls using the configured chain context.
 3. `status` shows account, signer health, activation state, permissions, and balances.
 
@@ -180,9 +194,9 @@ openawa uses the local [`chipkey`](https://github.com/jeanregisser/chipkey) CLI 
 openawa is built with [incur](https://github.com/wevm/incur), so agent discovery/integration is first-class:
 
 ```bash
-node dist/cli.js skills add  # install skill files into agent context
-node dist/cli.js mcp add     # register CLI as an MCP server
-node dist/cli.js --llms      # emit machine-readable manifest
+openawa skills add  # install skill files into agent context
+openawa mcp add     # register CLI as an MCP server
+openawa --llms      # emit machine-readable manifest
 ```
 
 ## Configuration

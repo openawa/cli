@@ -221,7 +221,7 @@ async function runFundingStep(
 // ── Command ───────────────────────────────────────────────────────────────────
 
 export const configureCommand = Cli.create('configure', {
-  description: 'One-shot account setup: signer key, account, and default permissions',
+  description: 'Human-run account setup: signer key, account, and default permissions',
   vars: varsSchema,
   options: z.object({
     chain: z.string().optional().describe('Chain name or ID (interactive picker if omitted)'),
@@ -255,7 +255,7 @@ export const configureCommand = Cli.create('configure', {
     setupMode: z.literal('local-admin'),
   }),
   examples: [
-    { description: 'Interactive setup' },
+    { description: 'Interactive human-run setup' },
     {
       options: { chain: 'base-sepolia', spendLimit: 0.01, expiry: 7 },
       description: 'Non-interactive',
