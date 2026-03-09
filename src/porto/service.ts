@@ -76,7 +76,9 @@ type PermissionsOptions = {
 const NATIVE_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000'
 const DEFAULT_RELAY_RPC_URL = 'https://rpc.porto.sh'
 const ZERO_TX_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000'
-const BASE_SEPOLIA_EXP_TOKEN = '0xfca413a634c4df6b98ebb970a44d9a32f8f5c64e'
+// EXP is the interop fee token used on all porto testnets (same address across chains)
+const EXP_TOKEN = '0xfca413a634c4df6b98ebb970a44d9a32f8f5c64e'
+const EXP_CHAIN_IDS = new Set([Chains.baseSepolia.id, Chains.optimismSepolia.id])
 const BASE_SEPOLIA_FAUCET_VALUE = '0x340aad21b3b700000'
 const RELAY_REQUEST_TIMEOUT_MS = 20_000
 const SEND_STAGE_TIMEOUT_MS = 90_000
@@ -639,12 +641,10 @@ export class PortoService {
 
   private async buildGrantPermissionsParam(chain: Chain, policy: PermissionPolicy) {
     const key = await this.signer.getPortoKey()
-    const feeTokenSymbol = chain.id === Chains.baseSepolia.id ? 'EXP' : 'native'
+    const feeTokenSymbol = EXP_CHAIN_IDS.has(chain.id) ? 'EXP' : 'native'
     const feeLimit =
       policy.feeLimit ??
-      (chain.id === Chains.baseSepolia.id
-        ? DEFAULT_GRANT_FEE_LIMIT_EXP
-        : DEFAULT_GRANT_FEE_LIMIT_NATIVE)
+      (EXP_CHAIN_IDS.has(chain.id) ? DEFAULT_GRANT_FEE_LIMIT_EXP : DEFAULT_GRANT_FEE_LIMIT_NATIVE)
     const calls = policy.calls
       ? policy.calls
       : [{ to: DEFAULT_GRANT_ANY_TARGET, signature: DEFAULT_GRANT_ANY_SELECTOR }]
@@ -981,7 +981,7 @@ export class PortoService {
         ...(chain.id === Chains.base.id ? { token: NATIVE_TOKEN_ADDRESS } : {}),
       })
 
-      if (chain.id === Chains.baseSepolia.id && response.id === ZERO_TX_HASH) {
+      if (EXP_CHAIN_IDS.has(chain.id) && response.id === ZERO_TX_HASH) {
         try {
           const fallback = await requestRelay<{ transactionHash: `0x${string}` }>(
             'wallet_addFaucetFunds',
@@ -989,7 +989,7 @@ export class PortoService {
               {
                 address,
                 chainId: chain.id,
-                tokenAddress: BASE_SEPOLIA_EXP_TOKEN,
+                tokenAddress: EXP_TOKEN,
                 value: BASE_SEPOLIA_FAUCET_VALUE,
               },
             ],
@@ -1008,7 +1008,7 @@ export class PortoService {
         }
       }
 
-      return { id: response.id, kind: chain.id === Chains.baseSepolia.id ? 'faucet' : 'onramp' }
+      return { id: response.id, kind: EXP_CHAIN_IDS.has(chain.id) ? 'faucet' : 'onramp' }
     } finally {
       session.close()
     }

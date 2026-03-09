@@ -110,10 +110,11 @@ export async function promptPermissionPolicy(opts: {
     process.exit(0)
   }
 
-  // Base Sepolia uses EXP (non-native fee token); all other chains use native currency
-  const isBaseSepolia = opts.chain.id === Chains.baseSepolia.id
-  const feeUnit = isBaseSepolia ? 'EXP' : opts.chain.nativeCurrency.symbol
-  const defaultFeeLimit = isBaseSepolia ? '25' : '0.01'
+  // Porto testnets use EXP as the fee token (same address across chains); others use native currency
+  const usesExpFee =
+    opts.chain.id === Chains.baseSepolia.id || opts.chain.id === Chains.optimismSepolia.id
+  const feeUnit = usesExpFee ? 'EXP' : opts.chain.nativeCurrency.symbol
+  const defaultFeeLimit = usesExpFee ? '25' : '0.01'
   const feeLimit = await p.text({
     message: `Fee cap per period (${feeUnit}):`,
     placeholder: defaultFeeLimit,

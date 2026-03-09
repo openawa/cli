@@ -83,15 +83,15 @@ Minimal flow:
 
 ```bash
 # 1) Configure account + permissions
-openawa configure --chain base-sepolia
+openawa configure --chain op-sepolia
 
 # 2) Inspect current state
-openawa status --chain base-sepolia
+openawa status --chain op-sepolia
 
 # 3) Submit a call bundle
 # Replace the payload below with your own contract call.
 openawa sign \
-  --chain base-sepolia \
+  --chain op-sepolia \
   --calls '[{"to":"0xabc...","data":"0x...","value":"0x0"}]'
 ```
 
@@ -105,9 +105,9 @@ Three commands, three jobs:
 
 Chain resolution accepts numeric IDs or names (case-insensitive, spaces/hyphens ignored):
 
-- `--chain 84532`
-- `--chain base-sepolia`
-- `--chain "Base Sepolia"`
+- `--chain 11155420`
+- `--chain op-sepolia`
+- `--chain "OP Sepolia"`
 
 Behavior:
 
